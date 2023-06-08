@@ -248,9 +248,10 @@ export class TotoroScene extends Simulation {
 		program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 1, 500);
 		if (this.lightOn) {
 			program_state.lights = [new Light(vec4(100, 5, 5, 1), color(1, 0.7, 0.5, 1), 5000), new Light(vec4(-5, 7, 0.9, 1), color(1, 0.7, 0.5, 1), 1000)];
-		}
-		else {
+		} else if (!this.paused && !this.lightOn) {
 			program_state.lights = [new Light(vec4(100, 5, 0, 1), color(1, 0.7, 0.5, 1), 5000)];
+		} else if (this.paused && !this.lightOn) {
+			program_state.lights = [new Light(vec4(100, 5, 0, 1), color(0, 0, 0, 1), 5000)]; // black light lmfao
 		}
 		// Draw the ground:
 		this.shapes.square.draw(context, program_state, Mat4.translation(0, 0, 0)
