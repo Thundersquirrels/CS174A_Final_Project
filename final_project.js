@@ -1,11 +1,67 @@
 import { defs, tiny } from './examples/common.js';
-import { Body, Simulation, Test_Data } from './examples/collisions-demo.js';
+import { Body } from './examples/collisions-demo.js';
 
 const {
 	Vector, Vector3, vec, vec3, vec4, color, hex_color, Shader, Matrix, Mat4, Light, Shape, Material, Scene, Texture
 } = tiny;
 
-export class Assignment3 extends Simulation {
+export class Simulation extends Scene {
+    // **Simulation** manages the stepping of simulation time.  Subclass it when making
+    // a Scene that is a physics demo.  This technique is careful to totally decouple
+    // the simulation from the frame rate (see below).
+    constructor() {
+        super();
+        Object.assign(this, {time_accumulator: 0, time_scale: 1, t: 0, dt: 1 / 20, bodies: [], steps_taken: 0});
+	this.raining = true;
+    }
+
+    simulate(frame_time) {
+        // simulate(): Carefully advance time according to Glenn Fiedler's
+        // "Fix Your Timestep" blog post.
+        // This line gives ourselves a way to trick the simulator into thinking
+        // that the display framerate is running fast or slow:
+        frame_time = this.time_scale * frame_time;
+
+        // Avoid the spiral of death; limit the amount of time we will spend
+        // computing during this timestep if display lags:
+        this.time_accumulator += Math.min(frame_time, 0.1);
+        // Repeatedly step the simulation until we're caught up with this frame:
+        while (Math.abs(this.time_accumulator) >= this.dt) {
+            // Single step of the simulation for all bodies:
+            this.update_state(this.dt);
+            for (let b of this.bodies)
+                b.advance(this.dt);
+            // Following the advice of the article, de-couple
+            // our simulation time from our frame rate:
+            this.t += Math.sign(frame_time) * this.dt;
+            this.time_accumulator -= Math.sign(frame_time) * this.dt;
+            this.steps_taken++;
+        }
+        // Store an interpolation factor for how close our frame fell in between
+        // the two latest simulation time steps, so we can correctly blend the
+        // two latest states and display the result.
+        let alpha = this.time_accumulator / this.dt;
+        for (let b of this.bodies) b.blend_state(alpha);
+    }
+    
+    display(context, program_state) {
+        // display(): advance the time and state of our whole simulation.
+        if (program_state.animate)
+            this.simulate(program_state.animation_delta_time);
+        // Draw each shape at its current location:
+        if (this.raining) {
+	    for (let b of this.bodies)
+		b.shape.draw(context, program_state, b.drawn_location.times(Mat4.rotation(Math.PI/2, 1, 1, 1)), b.material);
+	}
+    }
+
+    update_state(dt)      // update_state(): Your subclass of Simulation has to override this abstract function.
+    {
+        throw "Override this"
+    }
+}
+
+export class TotoroScene extends Simulation {
 	// ** Inertia_Demo** demonstration: This scene lets random initial momentums
 	// carry several bodies until they fall due to gravity and bounce.
 	constructor() {
@@ -34,8 +90,9 @@ export class Assignment3 extends Simulation {
 			totoroUmbrella: new Material(new defs.Phong_Shader(), { color: hex_color("#8020f0"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.8 }),
 			totoro: new Material(new defs.Phong_Shader(), { color: hex_color("#363636"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.6 }),
 			streetlamp: new Material(new defs.Phong_Shader(), { color: hex_color("#404040"), ambient: 0.08, specularity: 0.7, diffusivity: 1, smoothness: 0.4 }),
-			lightbulb: new Material(new defs.Phong_Shader(), { color: color(1, 1, 1, 0.1), ambient: 0.08, specularity: 1, diffusivity: 1, smoothness: 1 }),
+			lightbulb: new Material(new defs.Phong_Shader(), { color: color(1, 0, 0, .7), ambient: 0.08, specularity: 1, diffusivity: 1, smoothness: 1 }),
 			tree: new Material(new defs.Phong_Shader(), { color: hex_color("#964b00"), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
+		        rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 		}
 		this.time = 0;
 		this.scene = 1;
@@ -44,33 +101,59 @@ export class Assignment3 extends Simulation {
 		this.totoroUmbrellaPos = -4;
 		this.lightOn = false;
 	}
-
+    
+        make_control_panel() {
+            // make_control_panel(): Create the buttons for interacting with simulation time.
+            this.key_triggered_button("Speed up time", ["Shift", "T"], () => this.time_scale *= 5);
+            this.key_triggered_button("Slow down time", ["t"], () => this.time_scale /= 5);
+            this.new_line();
+            this.live_string(box => {
+		box.textContent = "Time scale: " + this.time_scale
+            });
+            this.new_line();
+            this.key_triggered_button("Toggle Light", ["l"], () => this.lightOn = !this.lightOn);
+            this.new_line();
+            this.live_string(box => {
+		box.textContent = "Light state: " + (this.lightOn ? "On" : "Off")
+            });
+	    this.new_line();
+            this.key_triggered_button("Toggle Rain", ["r"], () => this.raining = !this.raining);
+            this.new_line();
+            this.live_string(box => {
+		box.textContent = "Rain state: " + (this.raining ? "On" : "Off")
+            });
+	    this.new_line();
+            this.key_triggered_button("Open/Close Umbrella", ["u"], () => this.umbrellaState = !this.umbrellaState);
+            this.new_line();
+            this.live_string(box => {
+		box.textContent = "Umbrella state: " + (this.umbrellaState ? "Open" : "Closed")
+            });
+	}
+    
 	update_state(dt) {
 		this.time += dt;
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
 		// Generate additional moving bodies if there ever aren't enough:
-		while (this.bodies.length < 50)
-			this.bodies.push(new Body(this.shapes.cylinder, this.materials.test, vec3(0.2, 0.2, 0.2))
+		while (this.bodies.length < 500)
+		    this.bodies.push(new Body(this.shapes.cylinder, this.materials.rain, vec3(0.05, 0.05, 0.05))
 				.emplace(Mat4.translation(...vec3(0, 10, 0).randomized(40)),
 					vec3(0, -1, 0).randomized(2).normalized().times(3), Math.random()));
 
 		for (let b of this.bodies) {
 			// Gravity on Earth, where 1 unit in world space = 1 meter:
-			b.linear_velocity[1] += dt * -9.8;
+			b.linear_velocity[1] += dt * -1;
 			// If about to fall through floor, reverse y velocity:
 			if (b.center[1] < 0 && b.linear_velocity[1] < 0)
 				b.linear_velocity[1] *= -.2;
 		}
 		// Delete bodies that stop or stray too far away:
 		this.bodies = this.bodies.filter(b => b.center.norm() < 50 && b.linear_velocity.norm() > 3);
-		// this.time=50
-		// this.lightOn=true
 		if (this.time > 0 && this.time < 10) {
 			this.scene = 1;
 			this.camera_transform = Mat4.rotation(-1, 0, 1, 0).times(Mat4.translation(-5, -5, -5));
 		}
-		if (this.time > 10 && this.time < 20) {
+		if (this.time > 10 && this.time < 10.1) {
 			this.lightOn = true;
 		}
 		if (this.time > 20 && this.time < 40) {
@@ -99,16 +182,18 @@ export class Assignment3 extends Simulation {
 		super.display(context, program_state);
 		const t = program_state.animation_time / 1000;
 
-		if (!context.scratchpad.controls) {
-			this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-			this.children.push(new defs.Program_State_Viewer());
-		}
+		//if (!context.scratchpad.controls) {
+		//	this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+		//	this.children.push(new defs.Program_State_Viewer());
+		//}
 		program_state.set_camera(this.camera_transform);
 
 		program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 1, 500);
-		program_state.lights = [new Light(vec4(1100, 5, 0, 1), color(1, 0.5, 1, 1), 1000000)];
-		if (this.lightOn) {
-			program_state.lights.push(new Light(vec4(-5, 6, -10, 1), color(1, 1, 0.7, 1), 500));
+	        if (this.lightOn) {
+		    program_state.lights = [new Light(vec4(100, 5, 5, 1), color(1, 0.7, 0.5, 1), 5000), new Light(vec4(-5, 7, 0.9, 1), color(1, 0.7, 0.5, 1), 1000)];
+		}
+	        else {
+		    program_state.lights = [new Light(vec4(100, 5, 0, 1), color(1, 0.7, 0.5, 1), 5000)];
 		}
 		// Draw the ground:
 		this.shapes.square.draw(context, program_state, Mat4.translation(0, 0, 0)
