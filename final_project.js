@@ -194,23 +194,26 @@ export class TotoroScene extends Simulation {
 			this.paused = true;
 		}
 
+		// Interactivity
+		//wip
+
 		// Rest of the scene after continuing
 		if (!this.paused) {
-			if ((this.time - this.paused) > 80 && this.angle <= 1.1) {
+			if ((this.time - this.time_diff) > 80 && this.angle <= 1.1) {
 				this.angle += 0.01;
 				this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
 			}
-			if(100< (this.time - this.paused) && (this.time - this.paused) <=103){
+			if(100< (this.time - this.time_diff) && (this.time - this.time_diff) <=103){
 				this.totoroUmbrellaPos += 0.03;
 			}
-			if((this.time - this.paused) >100 &&this.totoro.facing_angle<Math.PI/2){
+			if((this.time - this.time_diff) >100 &&this.totoro.facing_angle<Math.PI/2){
 				this.totoro.facing_angle+=0.005
 				this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.005,0,1,0))
 			}
-			if ((this.time - this.paused) > 110 && (this.time - this.paused) <200) {
+			if ((this.time - this.time_diff) > 110 && (this.time - this.time_diff) <200) {
 				this.totoroUmbrellaPos += 0.03;
 			}
-			if ((this.time - this.paused) > 113 && (this.time - this.paused) <200) {
+			if ((this.time - this.time_diff) > 113 && (this.time - this.time_diff) <200) {
 				this.totoro.facing = Mat4.rotation(+Math.PI/2,0,1,0)
 				this.totoro_walk(0.03);
 				this.camera_transform = Mat4.rotation(1.6, 0, 1, 0).times(Mat4.translation(15, -3, -5));
