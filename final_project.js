@@ -67,10 +67,11 @@ export class TotoroScene extends Simulation {
 	constructor() {
 		super();
 		this.angle = 0.1;
+		this.angleSatsuki = 1.1;
 		this.shapes = {
 			cylinder: new defs.Capped_Cylinder(12, 12, [[0, 5], [0, 1]]),
 			square: new defs.Square(),
-			satsukiUmbrella: new Umbrella_Shape(8, 1.1),  // Custom shape for umbrella
+			satsukiUmbrella: new Umbrella_Shape(8, this.angleSatsuki),  // Custom shape for umbrella
 			totoroUmbrella: new Umbrella_Shape(8, this.angle),  // Custom shape for umbrella
 			streetlamp: new Streetlamp(),
 			lightbulb: new defs.Subdivision_Sphere(4),
@@ -106,6 +107,8 @@ export class TotoroScene extends Simulation {
 		// this.totoroPos = 0
 		this.totoroUmbrellaPos = -4;
 		this.lightOn = false;
+		this.raining = true;
+		this.umbrellaState = true;
 	}
 	totoro_walk(dPos) {
 		this.totoroPos += dPos;
@@ -122,19 +125,19 @@ export class TotoroScene extends Simulation {
 			box.textContent = "Time scale: " + this.time_scale
 		});
 		this.new_line();
-		this.key_triggered_button("Toggle Light", ["l"], () => this.lightOn = !this.lightOn);
+		this.key_triggered_button("Toggle Light", ["l"], () => this.lightOn = this.paused ? !this.lightOn : this.lightOn);
 		this.new_line();
 		this.live_string(box => {
 			box.textContent = "Light state: " + (this.lightOn ? "On" : "Off")
 		});
 		this.new_line();
-		this.key_triggered_button("Toggle Rain", ["r"], () => this.raining = !this.raining);
+		this.key_triggered_button("Toggle Rain", ["r"], () => this.raining = this.paused ? !this.raining : this.raining);
 		this.new_line();
 		this.live_string(box => {
 			box.textContent = "Rain state: " + (this.raining ? "On" : "Off")
 		});
 		this.new_line();
-		this.key_triggered_button("Open/Close Umbrella", ["u"], () => this.umbrellaState = !this.umbrellaState);
+		this.key_triggered_button("Open/Close Umbrella", ["u"], () => this.umbrellaState = this.paused ? !this.umbrellaState : this.umbrellaState);
 		this.new_line();
 		this.live_string(box => {
 			box.textContent = "Umbrella state: " + (this.umbrellaState ? "Open" : "Closed")
@@ -195,11 +198,21 @@ export class TotoroScene extends Simulation {
 		}
 
 		// Interactivity
-		//wip
+		// umbrella stuff: satsuki's umbrella opens faster bc at the slower speed, if you open/closed too many
+		// times, too many umbrella objects would get created & everything would crash :(
+		if (this.paused) {
+			if (this.umbrellaState && this.angleSatsuki < 1.1) { //open satsuki's umbrella
+				this.angleSatsuki += 0.1;
+				this.shapes.satsukiUmbrella = new Umbrella_Shape(8, this.angleSatsuki);
+			} else if (!this.umbrellaState && this.angleSatsuki > 0.2) {
+				this.angleSatsuki -= 0.1;
+				this.shapes.satsukiUmbrella = new Umbrella_Shape(8, this.angleSatsuki);
+			}
+		}
 
 		// Rest of the scene after continuing
 		if (!this.paused) {
-			if ((this.time - this.time_diff) > 80 && this.angle <= 1.1) {
+			if ((this.time - this.time_diff) > 80 && this.angle < 1.1) {
 				this.angle += 0.01;
 				this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
 			}
@@ -287,6 +300,7 @@ class Umbrella_Shape extends Shape {
 		defs.Surface_Of_Revolution.insert_transformed_copy_into(this, [3, 10, [vec3(0, 0, 0), vec3(0.02, 0, 0), vec3(0.02, 0, 1.1), vec3(0, 0, 1.1)], texture_range]);
 		// Bottom handle of umbrella
 		defs.Surface_Of_Revolution.insert_transformed_copy_into(this, [10, 20, [vec3(0.2, 0, 0), vec3(0.165, 0, 0.015), vec3(0.15, 0, 0.05), vec3(0.165, 0, 0.085), vec3(0.2, 0, 0.1), vec3(0.235, 0, 0.085), vec3(0.25, 0, 0.05), vec3(0.235, 0, 0.015), vec3(0.2, 0, 0)], texture_range, Math.PI], Mat4.scale(0.6, 0.6, 0.75).times(Mat4.translation(0.2, 0.05, 1.43).times(Mat4.rotation(Math.PI / 2, 1, 0, 0))));
+		console.log(this.arrays);
 	}
 }
 
