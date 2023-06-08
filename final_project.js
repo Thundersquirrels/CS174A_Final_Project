@@ -148,7 +148,7 @@ export class TotoroScene extends Simulation {
 		while (this.bodies.length < 500)
 			this.bodies.push(new Body(this.shapes.cylinder, this.materials.rain, vec3(0.05, 0.05, 0.05))
 				.emplace(Mat4.translation(...vec3(0, 10, 0).randomized(40)),
-					vec3(0, -1, 0).randomized(2).normalized().times(3), Math.random()));
+					vec3(0, -1, 0).normalized().times(3), Math.random()));
 
 		for (let b of this.bodies) {
 			// Gravity on Earth, where 1 unit in world space = 1 meter:
