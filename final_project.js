@@ -66,8 +66,7 @@ export class TotoroScene extends Simulation {
 	// carry several bodies until they fall due to gravity and bounce.
 	constructor() {
 		super();
-		this.angle = 0.1;
-		this.angleSatsuki = 1.1;
+		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
 		this.shapes = {
 			cylinder: new defs.Capped_Cylinder(12, 12, [[0, 5], [0, 1]]),
 			square: new defs.Square(),
@@ -86,7 +85,6 @@ export class TotoroScene extends Simulation {
 			facing: Mat4.rotation(0,0,0,1),
 			facing_angle:0
 		}
-
 		const shader = new defs.Fake_Bump_Map(1);
 		this.materials = {
 			test: new Material(shader, { color: color(.1, .9, .9, 1), ambient: .08, specularity: .3, diffusivity: 1, smoothness: 0.5 }),
@@ -98,22 +96,33 @@ export class TotoroScene extends Simulation {
 			tree: new Material(new defs.Phong_Shader(), { color: hex_color("#964b00"), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 			rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 		}
-		this.time = 0;
-		this.time_diff = 0;
-		this.paused = false;
-		this.scene = 1;
-		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
-		this.totoroPos = 20;
-		this.totoroPosY = 1.1;
-		this.totoroUmbrellaPos = -4;
-		this.lightOn = false;
-		this.raining = true;
-		this.umbrellaState = true;
 
-		this.totoroJump = false;
-		this.totoroJump_start = 0;
-		this.normal_rain_count = 500;
-		this.jump_rain_count = 1000;
+		// SCENE AND TIMING VARIABLES
+		this.scene = 1;			// scene number
+		this.time = 0;			// elapsed time
+		this.time_diff = 0;		// elapsed time during pause
+		this.paused = false;	// are we in the paused scene
+
+		// TOTORO & UMBRELLA VARIABLES
+		this.totoroPos = 20;	// Totoro X position
+		this.totoroPosY = 1.1;	// Totoro Y position
+		this.totoroUmbrellaPos = -4;	// Totoro's umbrella position
+		this.angle = 0.1;		// purple umbrella angle
+
+		//// INTERACTIVITY STUFF: (only relevant during paused scene)
+		// PINK UMBRELLA
+		this.angleSatsuki = 1.1;	// pink umbrella angle
+		this.umbrellaState = true;	// pink umbrella opened/closed
+
+		// OTHER TOGGLES
+		this.lightOn = false;	// light on/off
+		this.raining = true;	// rain on/off
+
+		// JUMPING
+		this.totoroJump = false;	// is he currently jumping
+		this.totoroJump_start = 0;	// time when he started jumping
+		this.normal_rain_count = 500;	// # of raindrops when not jumping
+		this.jump_rain_count = 1000;	// # of raindrops post-jump
 		this.rain_count = this.normal_rain_count;
 	}
 	totoro_walk(dPos) {
