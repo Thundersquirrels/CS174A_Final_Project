@@ -104,17 +104,36 @@ export class TotoroScene extends Simulation {
 		this.scene = 1;
 		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
 		this.totoroPos = 20;
-		// this.totoroPos = 0
+		this.totoroPosY = 1.1;
 		this.totoroUmbrellaPos = -4;
 		this.lightOn = false;
 		this.raining = true;
 		this.umbrellaState = true;
+
+		this.totoroJump = false;
+		this.totoroJump_start = 0;
+		this.normal_rain_count = 500;
+		this.jump_rain_count = 1000;
+		this.rain_count = this.normal_rain_count;
 	}
 	totoro_walk(dPos) {
 		this.totoroPos += dPos;
 		this.totoro.leg_angle+=1;
 		if(this.totoro.leg_angle%30==0)
 			this.totoro.main = new Totoro_Main(0.1*Math.sin(this.totoro.leg_angle))
+	}
+	totoro_jump(time) {
+		console.log(time - this.totoroJump_start);
+		this.totoroPosY = 2.5 * (time - this.totoroJump_start) - 1 * (time - this.totoroJump_start) * (time - this.totoroJump_start) + 1.1;
+		if (this.totoroPosY < 1.1) {
+			this.totoroPosY = 1.1
+			this.totoroJump = false;
+			this.totoroJump_start = 0;
+
+			// make more rain fall
+			this.rain_count = this.jump_rain_count;
+			this.materials.rain = new Material(new defs.Phong_Shader(), { color: color(1, 1, 1, 0.8), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 });
+		}
 	}
 	make_control_panel() {
 		// make_control_panel(): Create the buttons for interacting with simulation time.
@@ -143,6 +162,8 @@ export class TotoroScene extends Simulation {
 			box.textContent = "Umbrella state: " + (this.umbrellaState ? "Open" : "Closed")
 		});
 		this.new_line();
+		this.key_triggered_button("Make Totoro jump", ["j"], () => this.totoroJump = (this.paused && !this.totoroJump));
+		this.new_line();
 		this.key_triggered_button("Continue scene", ["c"], () => this.paused = false);
 		this.new_line();
 		this.live_string(box => {
@@ -159,10 +180,15 @@ export class TotoroScene extends Simulation {
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
 		// Generate additional moving bodies if there ever aren't enough:
-		while (this.bodies.length < 500)
+		while (this.bodies.length < this.rain_count) {
 			this.bodies.push(new Body(this.shapes.cylinder, this.materials.rain, vec3(0.05, 0.05, 0.05))
 				.emplace(Mat4.translation(...vec3(0, 10, 0).randomized(40)),
 					vec3(0, -1, 0).normalized().times(3), Math.random()));
+		}
+		if (this.rain_count > this.normal_rain_count) {
+			this.rain_count = this.normal_rain_count;
+			this.materials.rain = new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 });
+		}
 
 		for (let b of this.bodies) {
 			// Gravity on Earth, where 1 unit in world space = 1 meter:
@@ -198,15 +224,23 @@ export class TotoroScene extends Simulation {
 		}
 
 		// Interactivity
-		// umbrella stuff: satsuki's umbrella opens faster bc at the slower speed, if you open/closed too many
-		// times, too many umbrella objects would get created & everything would crash :(
 		if (this.paused) {
+			// umbrella stuff: satsuki's umbrella opens faster bc at the slower speed, if you open/closed too many
+			// times, too many umbrella objects would get created & everything would crash :(
 			if (this.umbrellaState && this.angleSatsuki < 1.1) { //open satsuki's umbrella
 				this.angleSatsuki += 0.1;
 				this.shapes.satsukiUmbrella = new Umbrella_Shape(8, this.angleSatsuki);
 			} else if (!this.umbrellaState && this.angleSatsuki > 0.2) {
 				this.angleSatsuki -= 0.1;
 				this.shapes.satsukiUmbrella = new Umbrella_Shape(8, this.angleSatsuki);
+			}
+
+			// totoro jumps
+			if (this.totoroJump) {
+				if (this.totoroJump_start === 0) {
+					this.totoroJump_start = this.time;
+				}
+				this.totoro_jump(this.time);
 			}
 		}
 
@@ -265,7 +299,7 @@ export class TotoroScene extends Simulation {
 		const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos, 2, 0).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.totoroUmbrella.draw(context, program_state, totoro_umbrella_transform, this.materials.totoroUmbrella);
 		// Draw totoro
-		const totoro_transform = Mat4.translation(this.totoroPos, 1.1, 0).times(Mat4.scale(0.3, 0.3, 0.3).times(this.totoro.facing));
+		const totoro_transform = Mat4.translation(this.totoroPos, this.totoroPosY, 0).times(Mat4.scale(0.3, 0.3, 0.3).times(this.totoro.facing));
 		this.totoro.main.draw(context, program_state, totoro_transform, this.materials.totoro);
 		this.totoro.belly.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffeed0") }));
 		this.totoro.whisker.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#000000") }));
@@ -301,7 +335,6 @@ class Umbrella_Shape extends Shape {
 		defs.Surface_Of_Revolution.insert_transformed_copy_into(this, [3, 10, [vec3(0, 0, 0), vec3(0.02, 0, 0), vec3(0.02, 0, 1.1), vec3(0, 0, 1.1)], texture_range]);
 		// Bottom handle of umbrella
 		defs.Surface_Of_Revolution.insert_transformed_copy_into(this, [10, 20, [vec3(0.2, 0, 0), vec3(0.165, 0, 0.015), vec3(0.15, 0, 0.05), vec3(0.165, 0, 0.085), vec3(0.2, 0, 0.1), vec3(0.235, 0, 0.085), vec3(0.25, 0, 0.05), vec3(0.235, 0, 0.015), vec3(0.2, 0, 0)], texture_range, Math.PI], Mat4.scale(0.6, 0.6, 0.75).times(Mat4.translation(0.2, 0.05, 1.43).times(Mat4.rotation(Math.PI / 2, 1, 0, 0))));
-		console.log(this.arrays);
 	}
 }
 
