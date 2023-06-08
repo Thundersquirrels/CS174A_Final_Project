@@ -66,7 +66,9 @@ export class TotoroScene extends Simulation {
 	// carry several bodies until they fall due to gravity and bounce.
 	constructor() {
 		super();
-		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
+		this.angle = 0.1;		// purple umbrella angle
+		this.angleSatsuki = 1.1;	// pink umbrella angle
+
 		this.shapes = {
 			cylinder: new defs.Capped_Cylinder(12, 12, [[0, 5], [0, 1]]),
 			square: new defs.Square(),
@@ -97,6 +99,8 @@ export class TotoroScene extends Simulation {
 			rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 		}
 
+		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
+
 		// SCENE AND TIMING VARIABLES
 		this.scene = 1;			// scene number
 		this.time = 0;			// elapsed time
@@ -107,11 +111,9 @@ export class TotoroScene extends Simulation {
 		this.totoroPos = 20;	// Totoro X position
 		this.totoroPosY = 1.1;	// Totoro Y position
 		this.totoroUmbrellaPos = -4;	// Totoro's umbrella position
-		this.angle = 0.1;		// purple umbrella angle
 
 		//// INTERACTIVITY STUFF: (only relevant during paused scene)
 		// PINK UMBRELLA
-		this.angleSatsuki = 1.1;	// pink umbrella angle
 		this.umbrellaState = true;	// pink umbrella opened/closed
 
 		// OTHER TOGGLES
