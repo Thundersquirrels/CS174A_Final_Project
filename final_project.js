@@ -98,6 +98,8 @@ export class TotoroScene extends Simulation {
 			rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 		}
 		this.time = 0;
+		this.time_diff = 0;
+		this.paused = false;
 		this.scene = 1;
 		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
 		this.totoroPos = 20;
@@ -137,11 +139,20 @@ export class TotoroScene extends Simulation {
 		this.live_string(box => {
 			box.textContent = "Umbrella state: " + (this.umbrellaState ? "Open" : "Closed")
 		});
+		this.new_line();
+		this.key_triggered_button("Continue scene", ["c"], () => this.paused = false);
+		this.new_line();
+		this.live_string(box => {
+			box.textContent = "Scene paused?: " + (this.paused ? "Yes" : "No")
+		});
 		// this.key_triggered_button("Walk", ["q"], () => this.totoro_walk(0.05))
 	}
 
 	update_state(dt) {
 		this.time += dt;
+		if (this.paused) {
+			this.time_diff += dt;
+		}
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
 		// Generate additional moving bodies if there ever aren't enough:
@@ -159,6 +170,7 @@ export class TotoroScene extends Simulation {
 		}
 		// Delete bodies that stop or stray too far away:
 		this.bodies = this.bodies.filter(b => b.center.norm() < 50 && b.linear_velocity.norm() > 3);
+
 		if (this.time > 0 && this.time < 10) {
 			this.scene = 1;
 			this.camera_transform = Mat4.rotation(-1, 0, 1, 0).times(Mat4.translation(-5, -5, -5));
@@ -176,28 +188,33 @@ export class TotoroScene extends Simulation {
 			this.totoro_walk(-0.03);
 			this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
 		}
-		if(this.totoroPos<=0 &&this.totoro.facing_angle<0){
-			this.totoro.facing_angle+=0.006
-			this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.006,0,1,0))
+		if(this.totoroPos<=0 &&this.totoro.facing_angle<0) {
+			this.totoro.facing_angle += 0.006
+			this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.006, 0, 1, 0))
+			this.paused = true;
 		}
-		if (this.time > 80 && this.angle <= 1.1) {
-			this.angle += 0.01;
-			this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
-		}
-		if(100<this.time&&this.time<=103){
-			this.totoroUmbrellaPos += 0.03;
-		}
-		if(this.time>100 &&this.totoro.facing_angle<Math.PI/2){
-			this.totoro.facing_angle+=0.005
-			this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.005,0,1,0))
-		}
-		if (this.time > 110 && this.time<200) {
-			this.totoroUmbrellaPos += 0.03;
-		}
-		if (this.time > 113 && this.time <200) {
-			this.totoro.facing = Mat4.rotation(+Math.PI/2,0,1,0)
-			this.totoro_walk(0.03);
-			this.camera_transform = Mat4.rotation(1.6, 0, 1, 0).times(Mat4.translation(15, -3, -5));
+
+		// Rest of the scene after continuing
+		if (!this.paused) {
+			if ((this.time - this.paused) > 80 && this.angle <= 1.1) {
+				this.angle += 0.01;
+				this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
+			}
+			if(100< (this.time - this.paused) && (this.time - this.paused) <=103){
+				this.totoroUmbrellaPos += 0.03;
+			}
+			if((this.time - this.paused) >100 &&this.totoro.facing_angle<Math.PI/2){
+				this.totoro.facing_angle+=0.005
+				this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.005,0,1,0))
+			}
+			if ((this.time - this.paused) > 110 && (this.time - this.paused) <200) {
+				this.totoroUmbrellaPos += 0.03;
+			}
+			if ((this.time - this.paused) > 113 && (this.time - this.paused) <200) {
+				this.totoro.facing = Mat4.rotation(+Math.PI/2,0,1,0)
+				this.totoro_walk(0.03);
+				this.camera_transform = Mat4.rotation(1.6, 0, 1, 0).times(Mat4.translation(15, -3, -5));
+			}
 		}
 	}
 
