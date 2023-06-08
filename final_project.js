@@ -6,59 +6,59 @@ const {
 } = tiny;
 
 export class Simulation extends Scene {
-    // **Simulation** manages the stepping of simulation time.  Subclass it when making
-    // a Scene that is a physics demo.  This technique is careful to totally decouple
-    // the simulation from the frame rate (see below).
-    constructor() {
-        super();
-        Object.assign(this, {time_accumulator: 0, time_scale: 1, t: 0, dt: 1 / 20, bodies: [], steps_taken: 0});
-	this.raining = true;
-    }
-
-    simulate(frame_time) {
-        // simulate(): Carefully advance time according to Glenn Fiedler's
-        // "Fix Your Timestep" blog post.
-        // This line gives ourselves a way to trick the simulator into thinking
-        // that the display framerate is running fast or slow:
-        frame_time = this.time_scale * frame_time;
-
-        // Avoid the spiral of death; limit the amount of time we will spend
-        // computing during this timestep if display lags:
-        this.time_accumulator += Math.min(frame_time, 0.1);
-        // Repeatedly step the simulation until we're caught up with this frame:
-        while (Math.abs(this.time_accumulator) >= this.dt) {
-            // Single step of the simulation for all bodies:
-            this.update_state(this.dt);
-            for (let b of this.bodies)
-                b.advance(this.dt);
-            // Following the advice of the article, de-couple
-            // our simulation time from our frame rate:
-            this.t += Math.sign(frame_time) * this.dt;
-            this.time_accumulator -= Math.sign(frame_time) * this.dt;
-            this.steps_taken++;
-        }
-        // Store an interpolation factor for how close our frame fell in between
-        // the two latest simulation time steps, so we can correctly blend the
-        // two latest states and display the result.
-        let alpha = this.time_accumulator / this.dt;
-        for (let b of this.bodies) b.blend_state(alpha);
-    }
-    
-    display(context, program_state) {
-        // display(): advance the time and state of our whole simulation.
-        if (program_state.animate)
-            this.simulate(program_state.animation_delta_time);
-        // Draw each shape at its current location:
-        if (this.raining) {
-	    for (let b of this.bodies)
-		b.shape.draw(context, program_state, b.drawn_location.times(Mat4.rotation(Math.PI/2, 1, 1, 1)), b.material);
+	// **Simulation** manages the stepping of simulation time.  Subclass it when making
+	// a Scene that is a physics demo.  This technique is careful to totally decouple
+	// the simulation from the frame rate (see below).
+	constructor() {
+		super();
+		Object.assign(this, { time_accumulator: 0, time_scale: 1, t: 0, dt: 1 / 20, bodies: [], steps_taken: 0 });
+		this.raining = true;
 	}
-    }
 
-    update_state(dt)      // update_state(): Your subclass of Simulation has to override this abstract function.
-    {
-        throw "Override this"
-    }
+	simulate(frame_time) {
+		// simulate(): Carefully advance time according to Glenn Fiedler's
+		// "Fix Your Timestep" blog post.
+		// This line gives ourselves a way to trick the simulator into thinking
+		// that the display framerate is running fast or slow:
+		frame_time = this.time_scale * frame_time;
+
+		// Avoid the spiral of death; limit the amount of time we will spend
+		// computing during this timestep if display lags:
+		this.time_accumulator += Math.min(frame_time, 0.1);
+		// Repeatedly step the simulation until we're caught up with this frame:
+		while (Math.abs(this.time_accumulator) >= this.dt) {
+			// Single step of the simulation for all bodies:
+			this.update_state(this.dt);
+			for (let b of this.bodies)
+				b.advance(this.dt);
+			// Following the advice of the article, de-couple
+			// our simulation time from our frame rate:
+			this.t += Math.sign(frame_time) * this.dt;
+			this.time_accumulator -= Math.sign(frame_time) * this.dt;
+			this.steps_taken++;
+		}
+		// Store an interpolation factor for how close our frame fell in between
+		// the two latest simulation time steps, so we can correctly blend the
+		// two latest states and display the result.
+		let alpha = this.time_accumulator / this.dt;
+		for (let b of this.bodies) b.blend_state(alpha);
+	}
+
+	display(context, program_state) {
+		// display(): advance the time and state of our whole simulation.
+		if (program_state.animate)
+			this.simulate(program_state.animation_delta_time);
+		// Draw each shape at its current location:
+		if (this.raining) {
+			for (let b of this.bodies)
+				b.shape.draw(context, program_state, b.drawn_location.times(Mat4.rotation(Math.PI / 2, 1, 1, 1)), b.material);
+		}
+	}
+
+	update_state(dt)      // update_state(): Your subclass of Simulation has to override this abstract function.
+	{
+		throw "Override this"
+	}
 }
 
 export class TotoroScene extends Simulation {
@@ -77,10 +77,13 @@ export class TotoroScene extends Simulation {
 			trees: [new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree()],
 			arrows: new defs.Axis_Arrows()
 		}
-		this.totoro={
-			main: new Totoro_Main(),
+		this.totoro = {
+			leg_angle:0,
+			main: new Totoro_Main(0),
 			belly: new Totoro_Belly(),
-			whisker: new Totoro_Whisker()
+			whisker: new Totoro_Whisker(),
+			facing: Mat4.rotation(0,0,0,1),
+			facing_angle:0
 		}
 
 		const shader = new defs.Fake_Bump_Map(1);
@@ -92,51 +95,58 @@ export class TotoroScene extends Simulation {
 			streetlamp: new Material(new defs.Phong_Shader(), { color: hex_color("#404040"), ambient: 0.08, specularity: 0.7, diffusivity: 1, smoothness: 0.4 }),
 			lightbulb: new Material(new defs.Phong_Shader(), { color: color(1, 0, 0, .7), ambient: 0.08, specularity: 1, diffusivity: 1, smoothness: 1 }),
 			tree: new Material(new defs.Phong_Shader(), { color: hex_color("#964b00"), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
-		        rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
+			rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 		}
 		this.time = 0;
 		this.scene = 1;
-		this.camera_transform = Mat4.translation(0, 0, 0);
+		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
 		this.totoroPos = 20;
+		// this.totoroPos = 0
 		this.totoroUmbrellaPos = -4;
 		this.lightOn = false;
 	}
-    
-        make_control_panel() {
-            // make_control_panel(): Create the buttons for interacting with simulation time.
-            this.key_triggered_button("Speed up time", ["Shift", "T"], () => this.time_scale *= 5);
-            this.key_triggered_button("Slow down time", ["t"], () => this.time_scale /= 5);
-            this.new_line();
-            this.live_string(box => {
-		box.textContent = "Time scale: " + this.time_scale
-            });
-            this.new_line();
-            this.key_triggered_button("Toggle Light", ["l"], () => this.lightOn = !this.lightOn);
-            this.new_line();
-            this.live_string(box => {
-		box.textContent = "Light state: " + (this.lightOn ? "On" : "Off")
-            });
-	    this.new_line();
-            this.key_triggered_button("Toggle Rain", ["r"], () => this.raining = !this.raining);
-            this.new_line();
-            this.live_string(box => {
-		box.textContent = "Rain state: " + (this.raining ? "On" : "Off")
-            });
-	    this.new_line();
-            this.key_triggered_button("Open/Close Umbrella", ["u"], () => this.umbrellaState = !this.umbrellaState);
-            this.new_line();
-            this.live_string(box => {
-		box.textContent = "Umbrella state: " + (this.umbrellaState ? "Open" : "Closed")
-            });
+	totoro_walk(dPos) {
+		this.totoroPos += dPos;
+		this.totoro.leg_angle+=1;
+		if(this.totoro.leg_angle%30==0)
+			this.totoro.main = new Totoro_Main(0.1*Math.sin(this.totoro.leg_angle))
 	}
-    
+	make_control_panel() {
+		// make_control_panel(): Create the buttons for interacting with simulation time.
+		this.key_triggered_button("Speed up time", ["Shift", "T"], () => this.time_scale *= 5);
+		this.key_triggered_button("Slow down time", ["t"], () => this.time_scale /= 5);
+		this.new_line();
+		this.live_string(box => {
+			box.textContent = "Time scale: " + this.time_scale
+		});
+		this.new_line();
+		this.key_triggered_button("Toggle Light", ["l"], () => this.lightOn = !this.lightOn);
+		this.new_line();
+		this.live_string(box => {
+			box.textContent = "Light state: " + (this.lightOn ? "On" : "Off")
+		});
+		this.new_line();
+		this.key_triggered_button("Toggle Rain", ["r"], () => this.raining = !this.raining);
+		this.new_line();
+		this.live_string(box => {
+			box.textContent = "Rain state: " + (this.raining ? "On" : "Off")
+		});
+		this.new_line();
+		this.key_triggered_button("Open/Close Umbrella", ["u"], () => this.umbrellaState = !this.umbrellaState);
+		this.new_line();
+		this.live_string(box => {
+			box.textContent = "Umbrella state: " + (this.umbrellaState ? "Open" : "Closed")
+		});
+		// this.key_triggered_button("Walk", ["q"], () => this.totoro_walk(0.05))
+	}
+
 	update_state(dt) {
 		this.time += dt;
 		// update_state():  Override the base time-stepping code to say what this particular
 		// scene should do to its bodies every frame -- including applying forces.
 		// Generate additional moving bodies if there ever aren't enough:
 		while (this.bodies.length < 500)
-		    this.bodies.push(new Body(this.shapes.cylinder, this.materials.rain, vec3(0.05, 0.05, 0.05))
+			this.bodies.push(new Body(this.shapes.cylinder, this.materials.rain, vec3(0.05, 0.05, 0.05))
 				.emplace(Mat4.translation(...vec3(0, 10, 0).randomized(40)),
 					vec3(0, -1, 0).randomized(2).normalized().times(3), Math.random()));
 
@@ -161,18 +171,32 @@ export class TotoroScene extends Simulation {
 			this.camera_transform = Mat4.rotation(-1.6, 0, 1, 0).times(Mat4.translation(-15, -3, -2));
 		}
 		if (this.time > 40 && this.time < 80 && this.totoroPos > 0) {
-			this.totoroPos -= 0.05;
+			this.totoro.facing_angle=-Math.PI/2
+			this.totoro.facing = Mat4.rotation(this.totoro.facing_angle,0,1,0)
+			this.totoro_walk(-0.03);
 			this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
+		}
+		if(this.totoroPos<=0 &&this.totoro.facing_angle<0){
+			this.totoro.facing_angle+=0.006
+			this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.006,0,1,0))
 		}
 		if (this.time > 80 && this.angle <= 1.1) {
 			this.angle += 0.01;
 			this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
 		}
-		if (this.time > 90) {
-			this.totoroUmbrellaPos += 0.05;
+		if(100<this.time&&this.time<=103){
+			this.totoroUmbrellaPos += 0.03;
 		}
-		if (this.time > 93) {
-			this.totoroPos += 0.05;
+		if(this.time>100 &&this.totoro.facing_angle<Math.PI/2){
+			this.totoro.facing_angle+=0.005
+			this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.005,0,1,0))
+		}
+		if (this.time > 110 && this.time<200) {
+			this.totoroUmbrellaPos += 0.03;
+		}
+		if (this.time > 113 && this.time <200) {
+			this.totoro.facing = Mat4.rotation(+Math.PI/2,0,1,0)
+			this.totoro_walk(0.03);
 			this.camera_transform = Mat4.rotation(1.6, 0, 1, 0).times(Mat4.translation(15, -3, -5));
 		}
 	}
@@ -182,18 +206,18 @@ export class TotoroScene extends Simulation {
 		super.display(context, program_state);
 		const t = program_state.animation_time / 1000;
 
-		//if (!context.scratchpad.controls) {
-		//	this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
-		//	this.children.push(new defs.Program_State_Viewer());
-		//}
+		// if (!context.scratchpad.controls) {
+		// 	this.children.push(context.scratchpad.controls = new defs.Movement_Controls());
+		// 	this.children.push(new defs.Program_State_Viewer());
+		// }
 		program_state.set_camera(this.camera_transform);
 
 		program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 1, 500);
-	        if (this.lightOn) {
-		    program_state.lights = [new Light(vec4(100, 5, 5, 1), color(1, 0.7, 0.5, 1), 5000), new Light(vec4(-5, 7, 0.9, 1), color(1, 0.7, 0.5, 1), 1000)];
+		if (this.lightOn) {
+			program_state.lights = [new Light(vec4(100, 5, 5, 1), color(1, 0.7, 0.5, 1), 5000), new Light(vec4(-5, 7, 0.9, 1), color(1, 0.7, 0.5, 1), 1000)];
 		}
-	        else {
-		    program_state.lights = [new Light(vec4(100, 5, 0, 1), color(1, 0.7, 0.5, 1), 5000)];
+		else {
+			program_state.lights = [new Light(vec4(100, 5, 0, 1), color(1, 0.7, 0.5, 1), 5000)];
 		}
 		// Draw the ground:
 		this.shapes.square.draw(context, program_state, Mat4.translation(0, 0, 0)
@@ -207,10 +231,10 @@ export class TotoroScene extends Simulation {
 		const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos, 2, 0).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.totoroUmbrella.draw(context, program_state, totoro_umbrella_transform, this.materials.totoroUmbrella);
 		// Draw totoro
-		const totoro_transform = Mat4.translation(this.totoroPos, 1, 0).times(Mat4.scale(0.3, 0.3, 0.3));
+		const totoro_transform = Mat4.translation(this.totoroPos, 1.1, 0).times(Mat4.scale(0.3, 0.3, 0.3).times(this.totoro.facing));
 		this.totoro.main.draw(context, program_state, totoro_transform, this.materials.totoro);
-		this.totoro.belly.draw(context, program_state, totoro_transform, this.materials.totoro.override({color:hex_color("#ffeed0")}));
-		this.totoro.whisker.draw(context, program_state, totoro_transform, this.materials.totoro.override({color:hex_color("#000000")}));
+		this.totoro.belly.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffeed0") }));
+		this.totoro.whisker.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#000000") }));
 
 		// Draw street lamp and its lightbulb
 		const streetlamp_transform = Mat4.translation(-5, 8, -2);
@@ -265,7 +289,7 @@ class Tree extends Shape {
 }
 
 class Totoro_Main extends Shape {
-	constructor() {
+	constructor(leg_angle) {
 		super("position", "normal", "texture_coord");
 		//body
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.scale(3, 4, 3));
@@ -276,35 +300,34 @@ class Totoro_Main extends Shape {
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.rotation(-25, 0, 0, 1).times(Mat4.translation(0, 5, 0).times(Mat4.scale(0.35, 1.35, 0.35))));
 		const arm_scale = Mat4.scale(0.4, 2.5, 2);
 		//left arm
-		const left_arm_transform = Mat4.rotation(Math.PI*(0.8), 0, 0, 1).times(Mat4.translation(3, 1, 0).times(arm_scale));
+		const left_arm_transform = Mat4.rotation(Math.PI * (0.8), 0, 0, 1).times(Mat4.translation(3, 1, 0).times(arm_scale));
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], left_arm_transform);
 		// right arm
-		const right_arm_transform = Mat4.rotation(Math.PI*(-0.8), 0, 0, 1).times(Mat4.translation(-3,1, 0).times(arm_scale));
+		const right_arm_transform = Mat4.rotation(Math.PI * (-0.8), 0, 0, 1).times(Mat4.translation(-3, 1, 0).times(arm_scale));
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], right_arm_transform);
 		//left leg
-		const leg_scale = Mat4.scale(0.8, 1.3, 0.8);
-		const left_leg_transform= Mat4.rotation(Math.PI*(-0.9), 0, 0, 1).times(Mat4.translation(-1.3,3.5, 0).times(leg_scale));
+		const leg_scale = Mat4.scale(1, 2, 1);
+		const left_leg_transform = Mat4.rotation(Math.PI * (-0.9), 0,leg_angle, 1).times(Mat4.translation(-1.3, 2.5, 0).times(leg_scale));
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], left_leg_transform);
 		//right leg
-		const right_left_transform= Mat4.rotation(Math.PI*(0.9), 0, 0, 1).times(Mat4.translation(1.3,3.5, 0).times(leg_scale));
+		const right_left_transform = Mat4.rotation(Math.PI * (0.9), 0, -leg_angle, 1).times(Mat4.translation(1.3, 2.5, 0).times(leg_scale));
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], right_left_transform);
-		
+
 	}
 }
 
-class Totoro_Belly extends Shape{
+class Totoro_Belly extends Shape {
 	constructor() {
 		super("position", "normal", "texture_coord");
-		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4],  Mat4.translation(0, -0.2, 0.7).times(Mat4.scale(2.65, 3.3, 2.65)));
-
+		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4], Mat4.translation(0, -0.2, 0.7).times(Mat4.scale(2.65, 3.3, 2.65)));
 	}
 }
 
-class Totoro_Whisker extends Shape{
+class Totoro_Whisker extends Shape {
 	constructor() {
 		super("position", "normal", "texture_coord");
 		//right whiskers
-		let whisker_transform = Mat4.rotation(Math.PI/2,0,1,0).times(Mat4.translation(-1.2, 3.5, -2).times(Mat4.scale(0.1,0.1,1.75))).times(Mat4.rotation(Math.PI/2,0,1,0))
+		let whisker_transform = Mat4.rotation(Math.PI / 2, 0, 1, 0).times(Mat4.translation(-1.2, 3.5, -2).times(Mat4.scale(0.1, 0.1, 1.75))).times(Mat4.rotation(Math.PI / 2, 0, 1, 0))
 		let whisker_transform1 = Mat4.rotation(-0.1, 0, 0, 1).times(whisker_transform)
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], whisker_transform1);
 		let whisker_transform2 = Mat4.translation(0, -0.1, 0).times(Mat4.rotation(0.1, 0, 0, 1).times(whisker_transform1))
@@ -313,9 +336,9 @@ class Totoro_Whisker extends Shape{
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], whisker_transform3);
 
 		//left whiskers
-		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1,1,1).times(whisker_transform1));
-		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1,1,1).times(whisker_transform2));
-		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1,1,1).times(whisker_transform3));
+		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform1));
+		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform2));
+		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform3));
 
 	}
 }
