@@ -70,14 +70,13 @@ export class TotoroScene extends Simulation {
 		this.angleSatsuki = 1.1;	// pink umbrella angle
 
 		this.shapes = {
-			cylinder: new defs.Capped_Cylinder(12, 12, [[0, 5], [0, 1]]),
+			sphere: new defs.Subdivision_Sphere(4),
 			square: new defs.Square(),
 			satsukiUmbrella: new Umbrella_Shape(8, this.angleSatsuki),  // Custom shape for umbrella
 			totoroUmbrella: new Umbrella_Shape(8, this.angle),  // Custom shape for umbrella
 			streetlamp: new Streetlamp(),
 			lightbulb: new defs.Subdivision_Sphere(4),
 			trees: [new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree()],
-			arrows: new defs.Axis_Arrows()
 		}
 		this.totoro = {
 			leg_angle:0,
@@ -135,7 +134,6 @@ export class TotoroScene extends Simulation {
 			this.totoro.main = new Totoro_Main(0.1*Math.sin(this.totoro.leg_angle))
 	}
 	totoro_jump(time) {
-		console.log(time - this.totoroJump_start);
 		this.totoroPosY = 2.5 * (time - this.totoroJump_start) - 1 * (time - this.totoroJump_start) * (time - this.totoroJump_start) + 1.1;
 		if (this.totoroPosY < 1.1) {
 			this.totoroPosY = 1.1
@@ -148,6 +146,10 @@ export class TotoroScene extends Simulation {
 			this.materials.rain = new Material(new defs.Phong_Shader(), { color: color(1, 1, 1, 0.8), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 });
 		}
 	}
+	colliding(b) { // check if body b collides with any shape or totoro
+
+	}
+
 	make_control_panel() {
 		// make_control_panel(): Create the buttons for interacting with simulation time.
 		this.key_triggered_button("Speed up time", ["Shift", "T"], () => this.time_scale *= 5);
@@ -194,9 +196,9 @@ export class TotoroScene extends Simulation {
 		// scene should do to its bodies every frame -- including applying forces.
 		// Generate additional moving bodies if there ever aren't enough:
 		while (this.bodies.length < this.rain_count) {
-			this.bodies.push(new Body(this.shapes.cylinder, this.materials.rain, vec3(0.05, 0.05, 0.05))
+			this.bodies.push(new Body(this.shapes.sphere, this.materials.rain, vec3(0.05, 0.05, 0.05))
 				.emplace(Mat4.translation(...vec3(0, 10, 0).randomized(40)),
-					vec3(0, -1, 0).normalized().times(3), Math.random()));
+					vec3(0, -1, 0).normalized().times(1.3), Math.random()));
 		}
 		if (this.rain_count > this.normal_rain_count) {
 			this.rain_count = this.normal_rain_count;
@@ -206,12 +208,17 @@ export class TotoroScene extends Simulation {
 		for (let b of this.bodies) {
 			// Gravity on Earth, where 1 unit in world space = 1 meter:
 			b.linear_velocity[1] += dt * -1;
-			// If about to fall through floor, reverse y velocity:
-			if (b.center[1] < 0 && b.linear_velocity[1] < 0)
-				b.linear_velocity[1] *= -.2;
 		}
-		// Delete bodies that stop or stray too far away:
-		this.bodies = this.bodies.filter(b => b.center.norm() < 50 && b.linear_velocity.norm() > 3);
+		// Delete bodies that bounce:
+		this.bodies = this.bodies.filter(b => b.linear_velocity[1] <= 0 || b.linear_velocity.norm() > 1.2);
+
+		for (let b of this.bodies) {
+			// If about to fall through floor, reverse y velocity:
+			if (b.center[1] < 0.5 && b.linear_velocity[1] < 0) {
+				b.linear_velocity[1] *= -.2;
+				b.center[1] = 0.5;
+			}
+		}
 
 		if (this.time > 0 && this.time < 10) {
 			this.scene = 1;
@@ -422,6 +429,13 @@ class Totoro_Whisker extends Shape {
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform2));
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform3));
 
+	}
+}
+
+class Puddle extends Shape {
+	constructor(location_matrix) {
+		super("position", "normal", "texture_coord");
+		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4], location_matrix.times(Mat4.scale(3, 3, 0.5)));
 	}
 }
 
