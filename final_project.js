@@ -198,6 +198,8 @@ export class TotoroScene extends Simulation {
 			facing_angle:0,
 			eyes: new Totoro_Eyes
 		}
+		this.satsuki = new Satsuki_Main()
+		//this.mei = new Satsuki_Main()
 		const shader = new defs.Fake_Bump_Map(1);
 		this.materials = {
 			test: new Material(shader, { color: color(.1, .9, .9, 1), ambient: .08, specularity: .3, diffusivity: 1, smoothness: 0.5 }),
@@ -488,6 +490,11 @@ export class TotoroScene extends Simulation {
 		this.totoro.belly.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffeed0") }));
 		this.totoro.whisker.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#000000"), specularity: 0.2 }));
 		this.totoro.eyes.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffffff"), ambient: 0.3 }));
+		// Draw satsuki
+		const satsuki_transform = Mat4.translation(-2.2, 0.3, 0).times(Mat4.scale(0.2, 0.2, 0.2));
+		this.satsuki.draw(context, program_state, satsuki_transform, this.materials.totoro);
+		// Draw mei
+		//
 
 		// Draw street lamp and its lightbulb
 		const streetlamp_transform = Mat4.translation(-5, 8, -2);
@@ -607,3 +614,23 @@ class Totoro_Whisker extends Shape {
 	}
 }
 
+class Satsuki_Main extends Shape {
+	constructor() {
+		super("position", "normal", "texture_coord");
+		//body
+		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.scale(1.3, 3, 1.3));
+		//head
+		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.translation(0, 3.6, 0).times(Mat4.scale(1.6, 1.6, 1.6)));
+		const upper_arm_scale = Mat4.scale(0.55, 1.5, 0.55);
+		const upper_arm_trans= Mat4.translation(0,1,0);
+		//left arm
+		const left_arm_transform = upper_arm_trans.times(Mat4.rotation(Math.PI * (0.9), 0, 0, 1).times(Mat4.translation(1.35, 0.7, 0).times(upper_arm_scale)));
+		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], left_arm_transform);
+		// right arm
+		const right_arm_transform = upper_arm_trans.times(Mat4.rotation(Math.PI * (-0.9), 0, 0, 1).times(Mat4.translation(-1.5, 0.7, 0).times(upper_arm_scale)));
+		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], right_arm_transform);
+		/*
+		im giving up here sorry everyone :')
+		 */
+	}
+}
