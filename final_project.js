@@ -77,7 +77,8 @@ export class TotoroScene extends Simulation {
 			streetlamp: new Streetlamp(),
 			lightbulb: new defs.Subdivision_Sphere(4),
 			trees: [new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree(), new Tree()],
-			arrows: new defs.Axis_Arrows()
+			arrows: new defs.Axis_Arrows(),
+			shadow: new defs.Regular_2D_Polygon(1, 15),
 		}
 		this.totoro = {
 			leg_angle:0,
@@ -97,6 +98,7 @@ export class TotoroScene extends Simulation {
 			lightbulb: new Material(new defs.Phong_Shader(), { color: color(1, 0, 0, .7), ambient: 0.08, specularity: 1, diffusivity: 1, smoothness: 1 }),
 			tree: new Material(new defs.Phong_Shader(), { color: hex_color("#964b00"), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 			rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
+			shadow: new Material(shader, { color: hex_color("#808080"), ambient: 0.01, specularity: 0.1, diffusivity: 0 }),
 		}
 
 		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
@@ -279,6 +281,26 @@ export class TotoroScene extends Simulation {
 		}
 	}
 
+	draw_shadow(context, program_state, x, y, z, x_scale, z_scale) {
+		x_scale = x_scale * 0.3;
+		z_scale = z_scale * 0.3;
+
+		let light_pos = vec3(-5, 7, 0.9);
+		let dist = vec3(x - light_pos[0], y - light_pos[1], z - light_pos[2]);
+
+        let scale = -0.01 / light_pos[1];
+        let shadow_pos = vec3(x - dist[0] * scale, 0.01, z - dist[2] * scale);
+
+        let dx = Math.abs(dist[0]);
+        let dz = Math.abs(dist[2]);
+
+        let shadow_scale = vec3((1.1**dx) * x_scale, 1, (1.1**dz) * z_scale);
+		let model_transform = Mat4.identity().times(Mat4.translation(shadow_pos[0], shadow_pos[1], shadow_pos[2]))
+		.times(Mat4.scale(shadow_scale[0], shadow_scale[1], shadow_scale[2])).times(Mat4.rotation(Math.PI/2, 1, 0, 0));
+
+        this.shapes.shadow.draw(context, program_state, model_transform, this.materials.shadow);
+	}
+
 	display(context, program_state) {
 		// display(): Draw everything else in the scene besides the moving bodies.
 		super.display(context, program_state);
@@ -302,6 +324,27 @@ export class TotoroScene extends Simulation {
 		this.shapes.square.draw(context, program_state, Mat4.translation(0, 0, 0)
 			.times(Mat4.rotation(Math.PI / 2, 1, 0, 0)).times(Mat4.scale(50, 50, 1)),
 			this.materials.test.override(color(.1, .8, .6, 1)));
+
+		// Draw shadows
+		
+		if (this.lightOn){
+			// Body
+			this.draw_shadow(context, program_state, this.totoroPos, 0, this.totoroPosY, 2.5, 3);
+			// Head
+			this.draw_shadow(context, program_state, (this.totoroPos + 0.75) * 1.2, 3, this.totoroPosY, 1, 2);
+			// Ear
+			this.draw_shadow(context, program_state, (this.totoroPos + 1) * 1.35, 5, this.totoroPosY + 0.16 - (Math.PI/2 - this.totoro.facing_angle) * 0.16 * 2 / Math.PI, 0.75, 0.35);
+			this.draw_shadow(context, program_state, (this.totoroPos + 1) * 1.35, 5, this.totoroPosY - 0.16 + (Math.PI/2 - this.totoro.facing_angle) * 0.16 * 2 / Math.PI, 0.75, 0.35);
+			// Arms
+			this.draw_shadow(context, program_state, this.totoroPos, 1, this.totoroPosY + 0.7 - (Math.PI/2 - this.totoro.facing_angle) * 0.7 * 2 / Math.PI, 1.5, 1.5);
+			this.draw_shadow(context, program_state, this.totoroPos, 1, this.totoroPosY - 0.7 + (Math.PI/2 - this.totoro.facing_angle) * 0.7 * 2 / Math.PI, 1.5, 1.5);
+
+			// Satsuki Umbrella Shadow
+			this.draw_shadow(context, program_state, -2.5, 2, 0, this.angleSatsuki/0.3 + 0.1, this.angleSatsuki/0.3 + 0.1);
+			// Totoro Umbrella Shadow
+			this.draw_shadow(context, program_state, this.totoroUmbrellaPos, 2, 0, this.angle/0.3 + 0.1, this.angle/0.3 + 0.1);
+		}
+		
 
 		// Draw satsuki's umbrella
 		const satsuki_umbrella_transform = Mat4.translation(-2.5, 2, 0).times(Mat4.scale(1.4, 1.4, 1.4).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
