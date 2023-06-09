@@ -340,15 +340,15 @@ export class TotoroScene extends Simulation {
 		
 		if (this.lightOn){
 			// Body
-			this.draw_shadow(context, program_state, this.totoroPos, 0, this.totoroPosY, 2.5, 3);
+			this.draw_shadow(context, program_state, this.totoroPos + (this.totoroPosY - 1.1), 0, 0, 2.5, 3);
 			// Head
-			this.draw_shadow(context, program_state, (this.totoroPos + 0.75) * 1.2, 3, this.totoroPosY, 1, 2);
+			this.draw_shadow(context, program_state, (this.totoroPos + 0.75) * 1.2 + (this.totoroPosY - 1.1), 3, 0, 1, 2);
 			// Ear
-			this.draw_shadow(context, program_state, (this.totoroPos + 1) * 1.35, 5, this.totoroPosY + 0.16 - (Math.PI/2 - this.totoro.facing_angle) * 0.16 * 2 / Math.PI, 0.75, 0.35);
-			this.draw_shadow(context, program_state, (this.totoroPos + 1) * 1.35, 5, this.totoroPosY - 0.16 + (Math.PI/2 - this.totoro.facing_angle) * 0.16 * 2 / Math.PI, 0.75, 0.35);
+			this.draw_shadow(context, program_state, (this.totoroPos + 1) * 1.35 + (this.totoroPosY - 1.1), 5, 0.16 - (Math.PI/2 - this.totoro.facing_angle) * 0.16 * 2 / Math.PI, 0.75, 0.35);
+			this.draw_shadow(context, program_state, (this.totoroPos + 1) * 1.35 + (this.totoroPosY - 1.1), 5, - 0.16 + (Math.PI/2 - this.totoro.facing_angle) * 0.16 * 2 / Math.PI, 0.75, 0.35);
 			// Arms
-			this.draw_shadow(context, program_state, this.totoroPos, 1, this.totoroPosY + 0.7 - (Math.PI/2 - this.totoro.facing_angle) * 0.7 * 2 / Math.PI, 1.5, 1.5);
-			this.draw_shadow(context, program_state, this.totoroPos, 1, this.totoroPosY - 0.7 + (Math.PI/2 - this.totoro.facing_angle) * 0.7 * 2 / Math.PI, 1.5, 1.5);
+			this.draw_shadow(context, program_state, this.totoroPos + (this.totoroPosY - 1.1), 1, 0.7 - (Math.PI/2 - this.totoro.facing_angle) * 0.7 * 2 / Math.PI, 1.5, 1.5);
+			this.draw_shadow(context, program_state, this.totoroPos + (this.totoroPosY - 1.1), 1, - 0.7 + (Math.PI/2 - this.totoro.facing_angle) * 0.7 * 2 / Math.PI, 1.5, 1.5);
 
 			// Satsuki Umbrella Shadow
 			this.draw_shadow(context, program_state, -2.5, 2, 0, this.angleSatsuki/0.3 + 0.1, this.angleSatsuki/0.3 + 0.1);
