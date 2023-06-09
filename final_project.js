@@ -61,11 +61,120 @@ export class Simulation extends Scene {
 	}
 }
 
+class Mouse_Controls extends Scene {
+	// **Movement_Controls** is a Scene that can be attached to a canvas, like any other
+	// Scene, but it is a Secondary Scene Component -- meant to stack alongside other
+	// scenes.  Rather than drawing anything it embeds both first-person and third-
+	// person style controls into the website.  These can be used to manually move your
+	// camera or other objects smoothly through your scene using key, mouse, and HTML
+	// button controls to help you explore what's in it.
+	constructor() {
+		super();
+		const data_members = {
+			roll: 0, look_around_locked: true,
+			thrust: vec3(0, 0, 0), pos: vec3(0, 0, 0), z_axis: vec3(0, 0, 0),
+			radians_per_frame: 1 / 200, meters_per_frame: 20, speed_multiplier: 1
+		};
+		Object.assign(this, data_members);
+
+		this.mouse_enabled_canvases = new Set();
+		this.will_take_over_graphics_state = true;
+		this.mouse = {"from_center": vec(0, 0)};
+	}
+
+	set_recipient(matrix_closure, inverse_closure) {
+		// set_recipient(): The camera matrix is not actually stored here inside Movement_Controls;
+		// instead, track an external target matrix to modify.  Targets must be pointer references
+		// made using closures.
+		this.matrix = matrix_closure;
+		this.inverse = inverse_closure;
+	}
+
+	reset(graphics_state) {
+		// reset(): Initially, the default target is the camera matrix that Shaders use, stored in the
+		// encountered program_state object.  Targets must be pointer references made using closures.
+		this.set_recipient(() => graphics_state.camera_transform,
+			() => graphics_state.camera_inverse);
+	}
+
+	add_mouse_controls(canvas) {
+		// add_mouse_controls():  Attach HTML mouse events to the drawing canvas.
+		// First, measure mouse steering, for rotating the flyaround camera:
+		this.mouse = {"from_center": vec(0, 0)};
+		const mouse_position = (e, rect = canvas.getBoundingClientRect()) =>
+			vec(e.clientX - (rect.left + rect.right) / 2, e.clientY - (rect.bottom + rect.top) / 2);
+		// Set up mouse response.  The last one stops us from reacting if the mouse leaves the canvas:
+		document.addEventListener("mouseup", e => {
+			this.mouse.anchor = undefined;
+		});
+		canvas.addEventListener("mousedown", e => {
+			e.preventDefault();
+			this.mouse.anchor = mouse_position(e);
+			this.pickPurpleUmbrella = true; // by default select the purple umbrella
+			this.cool_string = "no umbrella selected";
+			if (this.mouse.from_center[1] > 10 && this.mouse.from_center[1] < 130) {
+				if ((this.mouse.from_center[0] > -300 && this.mouse.from_center[0] < -280)) {
+					this.cool_string = "purple umbrella";
+					this.pickPurpleUmbrella = true;
+				} else if (this.mouse.from_center[0] > -190 && this.mouse.from_center[0] < -170) {
+					this.cool_string = "pink umbrella";
+					this.pickPurpleUmbrella = false;
+				} else {
+					this.cool_string = "no umbrella selected";
+				}
+			}
+		});
+		canvas.addEventListener("mousemove", e => {
+			e.preventDefault();
+			this.mouse.from_center = mouse_position(e);
+		});
+		canvas.addEventListener("mouseout", e => {
+			if (!this.mouse.anchor) this.mouse.from_center.scale_by(0)
+		});
+	}
+
+	show_explanation(document_element) {
+	}
+
+	make_control_panel() {
+		// make_control_panel(): Sets up a panel of interactive HTML elements, including
+		// buttons with key bindings for affecting this scene, and live info readouts.
+		this.control_panel.innerHTML += "Mouse position:<br>";
+		this.live_string(box => box.textContent = "X: " + this.mouse.from_center[0] + " / Y: " + this.mouse.from_center[1]);
+		this.new_line();
+
+		this.live_string(box => box.textContent = this.cool_string);
+		this.new_line();
+	}
+
+
+	display(context, graphics_state, dt = graphics_state.animation_delta_time / 1000) {
+		// The whole process of acting upon controls begins here.
+		const m = this.speed_multiplier * this.meters_per_frame,
+			r = this.speed_multiplier * this.radians_per_frame;
+
+		if (this.will_take_over_graphics_state) {
+			this.reset(graphics_state);
+			this.will_take_over_graphics_state = false;
+		}
+
+		if (!this.mouse_enabled_canvases.has(context.canvas)) {
+			this.add_mouse_controls(context.canvas);
+			this.mouse_enabled_canvases.add(context.canvas)
+		}
+		// Log some values:
+		this.pos = this.inverse().times(vec4(0, 0, 0, 1));
+		this.z_axis = this.inverse().times(vec4(0, 0, 1, 0));
+	}
+}
+
 export class TotoroScene extends Simulation {
 	// ** Inertia_Demo** demonstration: This scene lets random initial momentums
 	// carry several bodies until they fall due to gravity and bounce.
 	constructor() {
 		super();
+		this.children.push(this.mouse_controls = new Mouse_Controls());
+
 		this.angle = 0.1;		// purple umbrella angle
 		this.angleSatsuki = 1.1;	// pink umbrella angle
 
@@ -96,6 +205,7 @@ export class TotoroScene extends Simulation {
 			lightbulb: new Material(new defs.Phong_Shader(), { color: color(1, 0, 0, .7), ambient: 0.08, specularity: 1, diffusivity: 1, smoothness: 1 }),
 			tree: new Material(new defs.Phong_Shader(), { color: hex_color("#964b00"), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 			rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
+			rainBright: new Material(new defs.Phong_Shader(), { color: color(1, 1, 1, 0.8), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 		}
 
 		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
@@ -143,11 +253,7 @@ export class TotoroScene extends Simulation {
 
 			// make more rain fall
 			this.rain_count = this.jump_rain_count;
-			this.materials.rain = new Material(new defs.Phong_Shader(), { color: color(1, 1, 1, 0.8), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 });
 		}
-	}
-	colliding(b) { // check if body b collides with any shape or totoro
-
 	}
 
 	make_control_panel() {
@@ -196,14 +302,18 @@ export class TotoroScene extends Simulation {
 		// scene should do to its bodies every frame -- including applying forces.
 		// Generate additional moving bodies if there ever aren't enough:
 		while (this.bodies.length < this.rain_count) {
-			this.bodies.push(new Body(this.shapes.sphere, this.materials.rain, vec3(0.05, 0.05, 0.05))
-				.emplace(Mat4.translation(...vec3(0, 10, 0).randomized(40)),
-					vec3(0, -1, 0).normalized().times(1.3), Math.random()));
+			if (this.rain_count === this.jump_rain_count) {
+				this.bodies.push(new Body(this.shapes.sphere, this.materials.rainBright, vec3(0.05, 0.05, 0.05))
+					.emplace(Mat4.translation(...vec3(0, 10, 0).randomized(40)),
+						vec3(0, -1, 0).normalized().times(1.3), Math.random()));
+			} else {
+				this.bodies.push(new Body(this.shapes.sphere, this.materials.rain, vec3(0.05, 0.05, 0.05))
+					.emplace(Mat4.translation(...vec3(0, 10, 0).randomized(40)),
+						vec3(0, -1, 0).normalized().times(1.3), Math.random()));
+			}
 		}
-		if (this.rain_count > this.normal_rain_count) {
-			this.rain_count = this.normal_rain_count;
-			this.materials.rain = new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 });
-		}
+		if (this.rain_count === this.jump_rain_count)
+			this.rain_count = this.normal_rain_count; // return rain count to normal after finishing jump
 
 		for (let b of this.bodies) {
 			// Gravity on Earth, where 1 unit in world space = 1 meter:
@@ -211,7 +321,6 @@ export class TotoroScene extends Simulation {
 		}
 		// Delete bodies that bounce:
 		this.bodies = this.bodies.filter(b => b.linear_velocity[1] <= 0 || b.linear_velocity.norm() > 1.2);
-
 		for (let b of this.bodies) {
 			// If about to fall through floor, reverse y velocity:
 			if (b.center[1] < 0.5 && b.linear_velocity[1] < 0) {
@@ -247,12 +356,22 @@ export class TotoroScene extends Simulation {
 		if (this.paused) {
 			// umbrella stuff: satsuki's umbrella opens faster bc at the slower speed, if you open/closed too many
 			// times, too many umbrella objects would get created & everything would crash :(
-			if (this.umbrellaState && this.angleSatsuki < 1.1) { //open satsuki's umbrella
-				this.angleSatsuki += 0.1;
-				this.shapes.satsukiUmbrella = new Umbrella_Shape(8, this.angleSatsuki);
-			} else if (!this.umbrellaState && this.angleSatsuki > 0.2) {
-				this.angleSatsuki -= 0.1;
-				this.shapes.satsukiUmbrella = new Umbrella_Shape(8, this.angleSatsuki);
+			if (this.umbrellaState) {
+				if (!this.mouse_controls.pickPurpleUmbrella && this.angleSatsuki < 1.1) {
+					this.angleSatsuki += 0.1;
+					this.shapes.satsukiUmbrella = new Umbrella_Shape(8, this.angleSatsuki);
+				} else if (this.mouse_controls.pickPurpleUmbrella && this.angle < 1.1) {
+					this.angle += 0.1;
+					this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
+				}
+			} else if (!this.umbrellaState) {
+				if (!this.mouse_controls.pickPurpleUmbrella && this.angleSatsuki > 0.2) {
+					this.angleSatsuki -= 0.1;
+					this.shapes.satsukiUmbrella = new Umbrella_Shape(8, this.angleSatsuki);
+				} else if (this.mouse_controls.pickPurpleUmbrella && this.angle > 0.2) {
+					this.angle -= 0.1;
+					this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
+				}
 			}
 
 			// totoro jumps
@@ -429,13 +548,6 @@ class Totoro_Whisker extends Shape {
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform2));
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform3));
 
-	}
-}
-
-class Puddle extends Shape {
-	constructor(location_matrix) {
-		super("position", "normal", "texture_coord");
-		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4], location_matrix.times(Mat4.scale(3, 3, 0.5)));
 	}
 }
 
