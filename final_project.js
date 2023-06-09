@@ -195,7 +195,8 @@ export class TotoroScene extends Simulation {
 			belly: new Totoro_Belly(),
 			whisker: new Totoro_Whisker(),
 			facing: Mat4.rotation(0,0,0,1),
-			facing_angle:0
+			facing_angle:0,
+			eyes: new Totoro_Eyes
 		}
 		const shader = new defs.Fake_Bump_Map(1);
 		this.materials = {
@@ -211,7 +212,7 @@ export class TotoroScene extends Simulation {
 			shadow: new Material(shader, { color: hex_color("#808080"), ambient: 0.01, specularity: 0.1, diffusivity: 0 }),
 		}
 
-		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(0, 0, 1, 0));
+		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(1.1, 0, 1, 0));
 
 		// SCENE AND TIMING VARIABLES
 		this.scene = 1;			// scene number
@@ -444,7 +445,7 @@ export class TotoroScene extends Simulation {
 
 		program_state.projection_transform = Mat4.perspective(Math.PI / 4, context.width / context.height, 1, 500);
 		if (this.lightOn) {
-			program_state.lights = [new Light(vec4(100, 5, 5, 1), color(1, 0.7, 0.5, 1), 5000), new Light(vec4(-5, 7, 0.9, 1), color(1, 0.7, 0.5, 1), 1000)];
+			program_state.lights = [new Light(vec4(100, 5, 5, 1), color(1, 0.7, 0.5, 1), 5000), new Light(vec4(-5, 7, 0.9, 1), color(1,0.7,0.5, 1), 1000)];
 		} else if (!this.paused && !this.lightOn) {
 			program_state.lights = [new Light(vec4(100, 5, 0, 1), color(1, 0.7, 0.5, 1), 5000)];
 		} else if (this.paused && !this.lightOn) {
@@ -485,7 +486,8 @@ export class TotoroScene extends Simulation {
 		const totoro_transform = Mat4.translation(this.totoroPos, this.totoroPosY, 0).times(Mat4.scale(0.3, 0.3, 0.3).times(this.totoro.facing));
 		this.totoro.main.draw(context, program_state, totoro_transform, this.materials.totoro);
 		this.totoro.belly.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffeed0") }));
-		this.totoro.whisker.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#000000") }));
+		this.totoro.whisker.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#000000"), specularity: 0.2 }));
+		this.totoro.eyes.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffffff"), ambient: 0.3 }));
 
 		// Draw street lamp and its lightbulb
 		const streetlamp_transform = Mat4.translation(-5, 8, -2);
@@ -549,12 +551,13 @@ class Totoro_Main extends Shape {
 		//ears
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.rotation(25, 0, 0, 1).times(Mat4.translation(0, 5, 0).times(Mat4.scale(0.35, 1.35, 0.35))));
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.rotation(-25, 0, 0, 1).times(Mat4.translation(0, 5, 0).times(Mat4.scale(0.35, 1.35, 0.35))));
-		const arm_scale = Mat4.scale(0.4, 2.5, 2);
+		const arm_scale = Mat4.scale(0.6, 2.2, 2);
+		const arm_trans= Mat4.translation(0,1,0);
 		//left arm
-		const left_arm_transform = Mat4.rotation(Math.PI * (0.8), 0, 0, 1).times(Mat4.translation(3, 1, 0).times(arm_scale));
+		const left_arm_transform = arm_trans.times(Mat4.rotation(Math.PI * (0.9), 0, 0, 1).times(Mat4.translation(2.6, 1.2, 0).times(arm_scale)));
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], left_arm_transform);
 		// right arm
-		const right_arm_transform = Mat4.rotation(Math.PI * (-0.8), 0, 0, 1).times(Mat4.translation(-3, 1, 0).times(arm_scale));
+		const right_arm_transform = arm_trans.times(Mat4.rotation(Math.PI * (-0.9), 0, 0, 1).times(Mat4.translation(-2.75, 1.2, 0).times(arm_scale)));
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], right_arm_transform);
 		//left leg
 		const leg_scale = Mat4.scale(1, 2, 1);
@@ -573,7 +576,13 @@ class Totoro_Belly extends Shape {
 		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4], Mat4.translation(0, -0.2, 0.7).times(Mat4.scale(2.65, 3.3, 2.65)));
 	}
 }
-
+class Totoro_Eyes extends Shape{
+	constructor(){
+		super("position", "normal", "texture_coord");
+		defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(-0.9,3.9,1.7).times(Mat4.scale(0.35,0.35,0.35)))
+		defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(0.9,3.9,1.7).times(Mat4.scale(0.35,0.35,0.35)))
+	}
+}
 class Totoro_Whisker extends Shape {
 	constructor() {
 		super("position", "normal", "texture_coord");
@@ -590,7 +599,11 @@ class Totoro_Whisker extends Shape {
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform1));
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform2));
 		defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 5], [0, 1]]], Mat4.scale(-1, 1, 1).times(whisker_transform3));
-
+		//pupils
+		defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(-0.82,3.9,1.82).times(Mat4.scale(0.15,0.15,0.2)))
+		defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(0.82,3.9,1.82).times(Mat4.scale(0.15,0.15,0.2)))
+		//nose
+		defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(0,3.7,2).times(Mat4.scale(0.2,0.10,0.2)))
 	}
 }
 
