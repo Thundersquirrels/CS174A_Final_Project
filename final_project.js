@@ -121,7 +121,8 @@ export class TotoroScene extends Simulation {
 		this.raining = true;	// rain on/off
 
 		// JUMPING
-		this.totoroJump = false;	// is he currently jumping
+		this.totoroJump = false;	// did we press jump
+		this.totoroIsJumping = false;	// is he currently jumping
 		this.totoroJump_start = 0;	// time when he started jumping
 		this.normal_rain_count = 500;	// # of raindrops when not jumping
 		this.jump_rain_count = 1000;	// # of raindrops post-jump
@@ -140,6 +141,7 @@ export class TotoroScene extends Simulation {
 			this.totoroPosY = 1.1
 			this.totoroJump = false;
 			this.totoroJump_start = 0;
+			this.totoroIsJumping = false;
 
 			// make more rain fall
 			this.rain_count = this.jump_rain_count;
@@ -173,7 +175,7 @@ export class TotoroScene extends Simulation {
 			box.textContent = "Umbrella state: " + (this.umbrellaState ? "Open" : "Closed")
 		});
 		this.new_line();
-		this.key_triggered_button("Make Totoro jump", ["j"], () => this.totoroJump = (this.paused && !this.totoroJump));
+		this.key_triggered_button("Make Totoro jump", ["j"], () => this.totoroJump = this.totoroIsJumping ? this.totoroJump : (this.paused && !this.totoroJump));
 		this.new_line();
 		this.key_triggered_button("Continue scene", ["c"], () => this.paused = false);
 		this.new_line();
@@ -248,6 +250,7 @@ export class TotoroScene extends Simulation {
 
 			// totoro jumps
 			if (this.totoroJump) {
+				this.totoroIsJumping = true;
 				if (this.totoroJump_start === 0) {
 					this.totoroJump_start = this.time;
 				}
