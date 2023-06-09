@@ -225,7 +225,7 @@ export class TotoroScene extends Simulation {
 		// TOTORO & UMBRELLA VARIABLES
 		this.totoroPos = 20;	// Totoro X position
 		this.totoroPosY = 1.1;	// Totoro Y position
-		this.totoroUmbrellaPos = -4;	// Totoro's umbrella position
+		this.totoroUmbrellaPos={x:-4,y:2, z:0};	// Totoro's umbrella position
 
 		//// INTERACTIVITY STUFF: (only relevant during paused scene)
 		// PINK UMBRELLA
@@ -397,18 +397,25 @@ export class TotoroScene extends Simulation {
 				this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
 			}
 			if(100< (this.time - this.time_diff) && (this.time - this.time_diff) <=103){
-				this.totoroUmbrellaPos += 0.03;
+				this.totoroUmbrellaPos.x += 0.03;
 			}
 			if((this.time - this.time_diff) >100 &&this.totoro.facing_angle<Math.PI/2){
 				this.totoro.facing_angle+=0.005
 				this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.005,0,1,0))
+				
 			}
-			if ((this.time - this.time_diff) > 110 && (this.time - this.time_diff) <200) {
-				this.totoroUmbrellaPos += 0.03;
+			if ((this.time - this.time_diff) > 110 && (this.time - this.time_diff) <135) {
+				this.totoroUmbrellaPos.x += 0.03;
 			}
-			if ((this.time - this.time_diff) > 113 && (this.time - this.time_diff) <200) {
+			if ((this.time - this.time_diff) > 113 && (this.time - this.time_diff) <135) {
 				this.totoro.facing = Mat4.rotation(+Math.PI/2,0,1,0)
 				this.totoro_walk(0.03);
+				if(this.totoroUmbrellaPos.y<=3){
+					this.totoroUmbrellaPos.y+=0.05
+				}
+				if(this.totoroUmbrellaPos.z<=1){
+					this.totoroUmbrellaPos.z+=0.05
+				}
 				this.camera_transform = Mat4.rotation(1.6, 0, 1, 0).times(Mat4.translation(15, -3, -5));
 			}
 		}
@@ -474,7 +481,7 @@ export class TotoroScene extends Simulation {
 			// Satsuki Umbrella Shadow
 			this.draw_shadow(context, program_state, -2.5, 2, 0, this.angleSatsuki/0.3 + 0.1, this.angleSatsuki/0.3 + 0.1);
 			// Totoro Umbrella Shadow
-			this.draw_shadow(context, program_state, this.totoroUmbrellaPos, 2, 0, this.angle/0.3 + 0.1, this.angle/0.3 + 0.1);
+			this.draw_shadow(context, program_state, this.totoroUmbrellaPos.x, 2, 0, this.angle/0.3 + 0.1, this.angle/0.3 + 0.1);
 		}
 		
 
@@ -482,7 +489,7 @@ export class TotoroScene extends Simulation {
 		const satsuki_umbrella_transform = Mat4.translation(-2.5, 2, 0).times(Mat4.scale(1.4, 1.4, 1.4).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.satsukiUmbrella.draw(context, program_state, satsuki_umbrella_transform, this.materials.satsukiUmbrella);
 		// Draw totoro's umbrella
-		const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos, 2, 0).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
+		const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos.x, this.totoroUmbrellaPos.y, this.totoroUmbrellaPos.z).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.totoroUmbrella.draw(context, program_state, totoro_umbrella_transform, this.materials.totoroUmbrella);
 		// Draw totoro
 		const totoro_transform = Mat4.translation(this.totoroPos, this.totoroPosY, 0).times(Mat4.scale(0.3, 0.3, 0.3).times(this.totoro.facing));
