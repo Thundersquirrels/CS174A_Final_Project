@@ -198,14 +198,32 @@ export class TotoroScene extends Simulation {
 			facing_angle:0,
 			eyes: new Totoro_Eyes
 		}
-		this.satsuki = new Satsuki_Main()
-		//this.mei = new Satsuki_Main()
-		const shader = new defs.Fake_Bump_Map(1);
+                this.satsuki = {
+                        body: new Satsuki_Body(),
+                        dress_bottom: new Satsuki_Dress_Bottom(),
+                        dress_top: new Satsuki_Dress_Top(),
+                        boots: new Satsuki_Boots(),
+                        eyes: new Satsuki_Eyes(),
+                        pupils: new Satsuki_Pupils(),
+       		        hair: new Satsuki_Hair(),
+                }
+                this.mei = {
+                        body: new Satsuki_Body(),
+                        dress_bottom: new Satsuki_Dress_Bottom(),
+                        dress_top: new Satsuki_Dress_Top(),
+                        boots: new Satsuki_Boots(),
+                        eyes: new Satsuki_Eyes(),
+                        pupils: new Satsuki_Pupils(),
+       		        hair: new Satsuki_Hair(),
+                }
+
+	        const shader = new defs.Fake_Bump_Map(1);
 		this.materials = {
 			test: new Material(shader, { color: color(.1, .9, .9, 1), ambient: .08, specularity: .3, diffusivity: 1, smoothness: 0.5 }),
 			satsukiUmbrella: new Material(new defs.Phong_Shader(), { color: hex_color("#ff3080"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.8 }),
 			totoroUmbrella: new Material(new defs.Phong_Shader(), { color: hex_color("#8020f0"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.8 }),
 			totoro: new Material(new defs.Phong_Shader(), { color: hex_color("#363636"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.6 }),
+                        satsuki: new Material(new defs.Phong_Shader(), { color: hex_color("#363636"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.6 }),
 			streetlamp: new Material(new defs.Phong_Shader(), { color: hex_color("#404040"), ambient: 0.08, specularity: 0.7, diffusivity: 1, smoothness: 0.4 }),
 			lightbulb: new Material(new defs.Phong_Shader(), { color: color(1, 0, 0, .7), ambient: 0.08, specularity: 1, diffusivity: 1, smoothness: 1 }),
 			tree: new Material(new defs.Phong_Shader(), { color: hex_color("#964b00"), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
@@ -213,8 +231,6 @@ export class TotoroScene extends Simulation {
 			rainBright: new Material(new defs.Phong_Shader(), { color: color(1, 1, 1, 0.8), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 			shadow: new Material(shader, { color: hex_color("#808080"), ambient: 0.01, specularity: 0.1, diffusivity: 0 }),
 		}
-
-		this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(1.1, 0, 1, 0));
 
 		// SCENE AND TIMING VARIABLES
 		this.scene = 1;			// scene number
@@ -225,7 +241,12 @@ export class TotoroScene extends Simulation {
 		// TOTORO & UMBRELLA VARIABLES
 		this.totoroPos = 20;	// Totoro X position
 		this.totoroPosY = 1.1;	// Totoro Y position
-		this.totoroUmbrellaPos = -4;	// Totoro's umbrella position
+	        this.totoroUmbrellaPos = -4;	// Totoro's umbrella position
+	    
+                // TRANSFORMS
+	        this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(1.1, 0, 1, 0));
+                this.satsuki_transform = Mat4.translation(-2.2, 1.35, -0.1).times(Mat4.scale(0.65, 0.65, 0.65).times(Mat4.rotation(Math.PI/2, 1, 0, 0)));
+	        this.mei_transform = Mat4.translation(-2.2, 1.35, -0.1).times(Mat4.scale(0.65, 0.65, 0.65).times(Mat4.rotation(Math.PI/2, 1, 0, 0).times(Mat4.translation(-0.2, 0.13, -0.15).times(Mat4.scale(0.5, 0.5, 0.5)))));
 
 		//// INTERACTIVITY STUFF: (only relevant during paused scene)
 		// PINK UMBRELLA
@@ -334,7 +355,7 @@ export class TotoroScene extends Simulation {
 				b.center[1] = 0.5;
 			}
 		}
-
+	    
 		if (this.time > 0 && this.time < 10) {
 			this.scene = 1;
 			this.camera_transform = Mat4.rotation(-1, 0, 1, 0).times(Mat4.translation(-5, -5, -5));
@@ -484,17 +505,28 @@ export class TotoroScene extends Simulation {
 		// Draw totoro's umbrella
 		const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos, 2, 0).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.totoroUmbrella.draw(context, program_state, totoro_umbrella_transform, this.materials.totoroUmbrella);
-		// Draw totoro
-		const totoro_transform = Mat4.translation(this.totoroPos, this.totoroPosY, 0).times(Mat4.scale(0.3, 0.3, 0.3).times(this.totoro.facing));
+		// Draw Totoro
+		const totoro_transform = Mat4.translation(this.totoroPos, this.totoroPosY, 0).times(Mat4.scale(0.4, 0.4, 0.4).times(this.totoro.facing));
 		this.totoro.main.draw(context, program_state, totoro_transform, this.materials.totoro);
 		this.totoro.belly.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffeed0") }));
 		this.totoro.whisker.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#000000"), specularity: 0.2 }));
 		this.totoro.eyes.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffffff"), ambient: 0.3 }));
-		// Draw satsuki
-		const satsuki_transform = Mat4.translation(-2.2, 0.3, 0).times(Mat4.scale(0.2, 0.2, 0.2));
-		this.satsuki.draw(context, program_state, satsuki_transform, this.materials.totoro);
-		// Draw mei
-		//
+	        // Draw Satsuki
+                this.satsuki.body.draw(context, program_state, this.satsuki_transform, this.materials.satsuki.override({ color: hex_color("#ffe0c0") }));
+                this.satsuki.dress_bottom.draw(context, program_state, this.satsuki_transform.times(Mat4.scale(0.5, 0.4, 0.7).times(Mat4.translation(0, 0, 1.1))), this.materials.satsuki.override({ color: hex_color("#ffa500") }));
+                this.satsuki.dress_top.draw(context, program_state, this.satsuki_transform, this.materials.satsuki.override({ color: hex_color("#ffff00") }));
+                this.satsuki.boots.draw(context, program_state, this.satsuki_transform, this.materials.satsuki.override({ color: hex_color("#add8e6") }));
+                this.satsuki.eyes.draw(context, program_state, this.satsuki_transform, this.materials.satsuki.override({ color: hex_color("#ffffff"), specularity: 1 }));
+                this.satsuki.pupils.draw(context, program_state, this.satsuki_transform, this.materials.satsuki.override({ color: hex_color("#000000") }));
+                this.satsuki.hair.draw(context, program_state, this.satsuki_transform.times(Mat4.rotation(Math.PI/10, 1, 0, 0).times(Mat4.translation(0, 0.35, -0.26))), this.materials.satsuki.override({ color: hex_color("#8b4513") }));
+	        // Draw Mei
+                this.mei.body.draw(context, program_state, this.mei_transform, this.materials.satsuki.override({ color: hex_color("#ffe0c0") }));
+                this.mei.dress_bottom.draw(context, program_state, this.mei_transform.times(Mat4.scale(0.5, 0.4, 0.7).times(Mat4.translation(0, 0, 1.1))), this.materials.satsuki.override({ color: hex_color("#ffa500") }));
+                this.mei.dress_top.draw(context, program_state, this.mei_transform, this.materials.satsuki.override({ color: hex_color("#ffff00") }));
+                this.mei.boots.draw(context, program_state, this.mei_transform, this.materials.satsuki.override({ color: hex_color("#add8e6") }));
+                this.mei.eyes.draw(context, program_state, this.mei_transform, this.materials.satsuki.override({ color: hex_color("#ffffff"), specularity: 1 }));
+                this.mei.pupils.draw(context, program_state, this.mei_transform, this.materials.satsuki.override({ color: hex_color("#000000") }));
+                this.mei.hair.draw(context, program_state, this.mei_transform.times(Mat4.rotation(Math.PI/10, 1, 0, 0).times(Mat4.translation(0, 0.35, -0.26))), this.materials.satsuki.override({ color: hex_color("#8b4513") }));
 
 		// Draw street lamp and its lightbulb
 		const streetlamp_transform = Mat4.translation(-5, 8, -2);
@@ -614,23 +646,67 @@ class Totoro_Whisker extends Shape {
 	}
 }
 
-class Satsuki_Main extends Shape {
-	constructor() {
-		super("position", "normal", "texture_coord");
-		//body
-		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.scale(1.3, 3, 1.3));
-		//head
-		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], Mat4.translation(0, 3.6, 0).times(Mat4.scale(1.6, 1.6, 1.6)));
-		const upper_arm_scale = Mat4.scale(0.55, 1.5, 0.55);
-		const upper_arm_trans= Mat4.translation(0,1,0);
-		//left arm
-		const left_arm_transform = upper_arm_trans.times(Mat4.rotation(Math.PI * (0.9), 0, 0, 1).times(Mat4.translation(1.35, 0.7, 0).times(upper_arm_scale)));
-		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], left_arm_transform);
-		// right arm
-		const right_arm_transform = upper_arm_trans.times(Mat4.rotation(Math.PI * (-0.9), 0, 0, 1).times(Mat4.translation(-1.5, 0.7, 0).times(upper_arm_scale)));
-		defs.Subdivision_Sphere.insert_transformed_copy_into(this, [3], right_arm_transform);
-		/*
-		im giving up here sorry everyone :')
-		 */
-	}
+class Satsuki_Body extends Shape {
+        constructor() {
+            super("position", "normal", "texture_coord");
+	    // head
+	    defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4], Mat4.translation(0, 0.3, 0.2).times(Mat4.scale(0.25, 0.25, 0.25)));
+	    // arms
+	    defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 1], [0, 1]]], Mat4.translation(-0.4, 0.05, 0.7).times(Mat4.rotation(-Math.PI/10, 1, 1, 0).times(Mat4.scale(0.1, 0.1, 0.6))));
+            defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 1], [0, 1]]], Mat4.translation(0.4, 0.05, 0.7).times(Mat4.rotation(Math.PI/10, 1, 1, 0).times(Mat4.scale(0.1, 0.1, 0.6))));
+	    defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 1], [0, 1]]], Mat4.translation(-0.4, 0.05, 0.7).times(Mat4.rotation(-Math.PI/10, 1, 1, 0).times(Mat4.scale(0.1, 0.1, 0.6))));
+            defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 1], [0, 1]]], Mat4.translation(0.4, 0.05, 0.7).times(Mat4.rotation(Math.PI/10, 1, 1, 0).times(Mat4.scale(0.1, 0.1, 0.6))));
+	    // legs
+	    defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 1], [0, 1]]], Mat4.translation(-0.17, 0, 1.6).times(Mat4.scale(0.1, 0.1, 0.8)));
+            defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 1], [0, 1]]], Mat4.translation(0.17, 0, 1.6).times(Mat4.scale(0.1, 0.1, 0.8)));
+
+        }
+}
+
+class Satsuki_Dress_Bottom extends Shape {
+        constructor() {
+                super("position", "normal", "texture_coord");
+	    defs.Surface_Of_Revolution.insert_transformed_copy_into(this, [50, 10, [vec3(0.8, 0, 0.8), vec3(0.7, 0, 0.6), vec3(0.6, 0, 0.3), vec3(0.5, 0, 0.1), vec3(0, 0, 0)], [[0, 1], [0, 1]]]);
+        }
+}
+
+class Satsuki_Dress_Top extends Shape {
+        constructor() {
+                super("position", "normal", "texture_coord");
+	    defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4], Mat4.translation(0, 0.08, 0.6).times(Mat4.scale(0.35, 0.25, 0.35).times(Mat4.rotation(-Math.PI/10, 1, 0, 0))));
+	    defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4], Mat4.translation(0.3, 0.14, 0.4).times(Mat4.scale(0.15, 0.12, 0.15)));
+	    defs.Subdivision_Sphere.insert_transformed_copy_into(this, [4], Mat4.translation(-0.3, 0.14, 0.4).times(Mat4.scale(0.15, 0.12, 0.15)));
+        }
+}
+
+class Satsuki_Boots extends Shape {
+        constructor() {
+                super("position", "normal", "texture_coord");
+            defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 1], [0, 1]]], Mat4.translation(-0.18, 0, 2).times(Mat4.scale(0.15, 0.15, 0.4)));
+            defs.Capped_Cylinder.insert_transformed_copy_into(this, [12, 12, [[0, 1], [0, 1]]], Mat4.translation(0.18, 0, 2).times(Mat4.scale(0.15, 0.15, 0.4)));
+
+        }
+}
+
+class Satsuki_Eyes extends Shape {
+        constructor() {
+                super("position", "normal", "texture_coord");
+	    defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(-0.11, 0.55, 0.25).times(Mat4.scale(0.06, 0.06, 0.045).times(Mat4.rotation(-Math.PI/2.5, 1, 0, 0))));
+	    defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(0.11, 0.55, 0.25).times(Mat4.scale(0.06, 0.06, 0.045).times(Mat4.rotation(-Math.PI/2.5, 1, 0, 0))));
+        }
+}
+
+class Satsuki_Pupils extends Shape {
+        constructor() {
+                super("position", "normal", "texture_coord");
+	    defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(-0.11, 0.56, 0.25).times(Mat4.scale(0.03, 0.03, 0.028).times(Mat4.rotation(-Math.PI/2.5, 1, 0, 0))));
+	    defs.Regular_2D_Polygon.insert_transformed_copy_into(this,[1,15],Mat4.translation(0.11, 0.56, 0.25).times(Mat4.scale(0.03, 0.03, 0.028).times(Mat4.rotation(-Math.PI/2.5, 1, 0, 0))));
+        }
+}
+
+class Satsuki_Hair extends Shape {
+        constructor() {
+                super("position", "normal", "texture_coord");
+	    defs.Surface_Of_Revolution.insert_transformed_copy_into(this, [50, 10, [vec3(0.3, 0, 0.3), vec3(0.28, 0, 0.24), vec3(0.24, 0, 0.2), vec3(0.2, 0, 0.1), vec3(0, 0, 0)], [[0, 1], [0, 1]]]);
+        }
 }
