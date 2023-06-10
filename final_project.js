@@ -219,14 +219,14 @@ export class TotoroScene extends Simulation {
 
 	        const shader = new defs.Fake_Bump_Map(1);
 		this.materials = {
-			test: new Material(shader, { color: color(.1, .9, .9, 1), ambient: .08, specularity: .3, diffusivity: 1, smoothness: 0.5 }),
+			test: new Material(shader, { color: color(.1, .9, .9, 1), ambient: .08, specularity: .5, diffusivity: 1, smoothness: 0.5 }),
 			satsukiUmbrella: new Material(new defs.Phong_Shader(), { color: hex_color("#ff3080"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.8 }),
 			totoroUmbrella: new Material(new defs.Phong_Shader(), { color: hex_color("#8020f0"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.8 }),
 			totoro: new Material(new defs.Phong_Shader(), { color: hex_color("#363636"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.6 }),
                         satsuki: new Material(new defs.Phong_Shader(), { color: hex_color("#363636"), ambient: 0.05, specularity: 0.3, diffusivity: 0.7, smoothness: 0.6 }),
 			streetlamp: new Material(new defs.Phong_Shader(), { color: hex_color("#404040"), ambient: 0.08, specularity: 0.7, diffusivity: 1, smoothness: 0.4 }),
 			lightbulb: new Material(new defs.Phong_Shader(), { color: color(1, 0, 0, .7), ambient: 0.08, specularity: 1, diffusivity: 1, smoothness: 1 }),
-			tree: new Material(new defs.Phong_Shader(), { color: hex_color("#964b00"), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
+			tree: new Material(new defs.Phong_Shader(), { color: hex_color("#964b00"), ambient: 0.08, specularity: 0.5, diffusivity: 0.8, smoothness: 0.4 }),
 			rain: new Material(new defs.Phong_Shader(), { color: color(0, 0, 1, 0.2), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 			rainBright: new Material(new defs.Phong_Shader(), { color: color(1, 1, 1, 0.8), ambient: 0.08, specularity: 0.3, diffusivity: 0.8, smoothness: 0.4 }),
 			shadow: new Material(shader, { color: hex_color("#808080"), ambient: 0.01, specularity: 0.1, diffusivity: 0 }),
@@ -241,7 +241,7 @@ export class TotoroScene extends Simulation {
 		// TOTORO & UMBRELLA VARIABLES
 		this.totoroPos = 20;	// Totoro X position
 		this.totoroPosY = 1.1;	// Totoro Y position
-	        this.totoroUmbrellaPos = -4;	// Totoro's umbrella position
+	        this.totoroUmbrellaPos={x:-4,y:2, z:0};	// Totoro's umbrella position
 	    
                 // TRANSFORMS
 	        this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(1.1, 0, 1, 0));
@@ -418,18 +418,24 @@ export class TotoroScene extends Simulation {
 				this.shapes.totoroUmbrella = new Umbrella_Shape(8, this.angle);
 			}
 			if(100< (this.time - this.time_diff) && (this.time - this.time_diff) <=103){
-				this.totoroUmbrellaPos += 0.03;
+				this.totoroUmbrellaPos.x += 0.03;
 			}
 			if((this.time - this.time_diff) >100 &&this.totoro.facing_angle<Math.PI/2){
 				this.totoro.facing_angle+=0.005
 				this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.005,0,1,0))
 			}
-			if ((this.time - this.time_diff) > 110 && (this.time - this.time_diff) <200) {
-				this.totoroUmbrellaPos += 0.03;
+			if ((this.time - this.time_diff) > 110 && (this.time - this.time_diff) <135) {
+				this.totoroUmbrellaPos.x += 0.03;
 			}
-			if ((this.time - this.time_diff) > 113 && (this.time - this.time_diff) <200) {
+			if ((this.time - this.time_diff) > 113 && (this.time - this.time_diff) <135) {
 				this.totoro.facing = Mat4.rotation(+Math.PI/2,0,1,0)
-				this.totoro_walk(0.03);
+			        this.totoro_walk(0.03);
+			        if(this.totoroUmbrellaPos.y<=3){
+					this.totoroUmbrellaPos.y+=0.05
+				}
+				if(this.totoroUmbrellaPos.z<=1){
+					this.totoroUmbrellaPos.z+=0.05
+				}
 				this.camera_transform = Mat4.rotation(1.6, 0, 1, 0).times(Mat4.translation(15, -3, -5));
 			}
 		}
@@ -495,18 +501,18 @@ export class TotoroScene extends Simulation {
 			// Satsuki Umbrella Shadow
 			this.draw_shadow(context, program_state, -2.5, 2, 0, this.angleSatsuki/0.3 + 0.1, this.angleSatsuki/0.3 + 0.1);
 			// Totoro Umbrella Shadow
-			this.draw_shadow(context, program_state, this.totoroUmbrellaPos, 2, 0, this.angle/0.3 + 0.1, this.angle/0.3 + 0.1);
+			this.draw_shadow(context, program_state, this.totoroUmbrellaPos.x, 2, 0, this.angle/0.3 + 0.1, this.angle/0.3 + 0.1);
 		}
 		
 
 		// Draw satsuki's umbrella
 		const satsuki_umbrella_transform = Mat4.translation(-2.5, 2, 0).times(Mat4.scale(1.4, 1.4, 1.4).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.satsukiUmbrella.draw(context, program_state, satsuki_umbrella_transform, this.materials.satsukiUmbrella);
-		// Draw totoro's umbrella
-		const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos, 2, 0).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
+	        // Draw totoro's umbrella
+	        const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos.x, this.totoroUmbrellaPos.y, this.totoroUmbrellaPos.z).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.totoroUmbrella.draw(context, program_state, totoro_umbrella_transform, this.materials.totoroUmbrella);
 		// Draw Totoro
-		const totoro_transform = Mat4.translation(this.totoroPos, this.totoroPosY, 0).times(Mat4.scale(0.4, 0.4, 0.4).times(this.totoro.facing));
+		const totoro_transform = Mat4.translation(this.totoroPos, this.totoroPosY, 0).times(Mat4.scale(0.3, 0.3, 0.3).times(this.totoro.facing));
 		this.totoro.main.draw(context, program_state, totoro_transform, this.materials.totoro);
 		this.totoro.belly.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#ffeed0") }));
 		this.totoro.whisker.draw(context, program_state, totoro_transform, this.materials.totoro.override({ color: hex_color("#000000"), specularity: 0.2 }));
