@@ -1,6 +1,7 @@
 # Totoro in the Rain
 **CS174A Final Project**<br>
 **Carson Cox, Arvin Ding, Justin Li, Megan Wu**
+https://github.com/Thundersquirrels/CS174A_Final_Project/edit/main
 
 ## Concept
 This project is a recreation of a scene from My Neighbor Totoro. The original scene features the two main characters, Mei and Satsuki, handing an umbrella to Totoro.<br>
@@ -18,9 +19,15 @@ In Scene 2, users can interact with Totoro and other aspects of the scene. Here 
 * *(Mouse select)* Click on an umbrella to select which one to open/close
 * *(U)* Open/close selected umbrella
 * *(J)* Make Totoro jump; when he lands, extra raindrops fall down
+* *(C)* Continue the rest of the scene
 
 ## Advanced Features
 We implemented three advanced features for our project:
 * Shadows for Totoro and umbrellas
 * Mouse Picking to select which umbrella to open/close
 * Collision Detection to make rain bounce off the ground
+
+## Challenges
+* Properly displaying the light from within the lightbulb
+* Animating the Umbrella and Totoro.
+* Shadows, namely figuring out the correct scaling based on the distance from light source. 

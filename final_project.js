@@ -241,7 +241,7 @@ export class TotoroScene extends Simulation {
 		// TOTORO & UMBRELLA VARIABLES
 		this.totoroPos = 20;	// Totoro X position
 		this.totoroPosY = 1.1;	// Totoro Y position
-	        this.totoroUmbrellaPos={x:-4,y:2, z:0};	// Totoro's umbrella position
+	        this.totoroUmbrellaPos={x:-4, y:2, z:0};	// Totoro's umbrella position
 	    
                 // TRANSFORMS
 	        this.camera_transform = Mat4.translation(0, -2, -10).times(Mat4.rotation(1.1, 0, 1, 0));
@@ -423,14 +423,15 @@ export class TotoroScene extends Simulation {
 			if((this.time - this.time_diff) >100 &&this.totoro.facing_angle<Math.PI/2){
 				this.totoro.facing_angle+=0.005
 				this.totoro.facing = this.totoro.facing.times(Mat4.rotation(0.005,0,1,0))
+				
 			}
 			if ((this.time - this.time_diff) > 110 && (this.time - this.time_diff) <135) {
 				this.totoroUmbrellaPos.x += 0.03;
 			}
 			if ((this.time - this.time_diff) > 113 && (this.time - this.time_diff) <135) {
 				this.totoro.facing = Mat4.rotation(+Math.PI/2,0,1,0)
-			        this.totoro_walk(0.03);
-			        if(this.totoroUmbrellaPos.y<=3){
+				this.totoro_walk(0.03);
+				if(this.totoroUmbrellaPos.y<=3){
 					this.totoroUmbrellaPos.y+=0.05
 				}
 				if(this.totoroUmbrellaPos.z<=1){
@@ -508,8 +509,8 @@ export class TotoroScene extends Simulation {
 		// Draw satsuki's umbrella
 		const satsuki_umbrella_transform = Mat4.translation(-2.5, 2, 0).times(Mat4.scale(1.4, 1.4, 1.4).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.satsukiUmbrella.draw(context, program_state, satsuki_umbrella_transform, this.materials.satsukiUmbrella);
-	        // Draw totoro's umbrella
-	        const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos.x, this.totoroUmbrellaPos.y, this.totoroUmbrellaPos.z).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
+		// Draw totoro's umbrella
+		const totoro_umbrella_transform = Mat4.translation(this.totoroUmbrellaPos.x, this.totoroUmbrellaPos.y, this.totoroUmbrellaPos.z).times(Mat4.scale(1.5, 1.5, 1.5).times(Mat4.rotation(Math.PI / 2, 1, 0, 0)));
 		this.shapes.totoroUmbrella.draw(context, program_state, totoro_umbrella_transform, this.materials.totoroUmbrella);
 		// Draw Totoro
 		const totoro_transform = Mat4.translation(this.totoroPos, this.totoroPosY, 0).times(Mat4.scale(0.3, 0.3, 0.3).times(this.totoro.facing));
